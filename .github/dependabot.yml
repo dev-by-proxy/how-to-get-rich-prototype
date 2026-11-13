@@ -1,0 +1,9 @@
+# Dependabot: this repo is one static HTML file with no npm packages, so only
+# GitHub Actions are watched (none yet). Security alerts are switched on in
+# GitHub (repo → Settings → Advanced Security).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

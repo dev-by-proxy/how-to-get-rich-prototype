@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>How to Get Rich Prototype</title>
+<style>
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+</style>
+<style>
+/* Layout: the app's own phone column (430px) with a bottom tab bar; cards stacked by importance. Tokens copied from app/src/styles/tokens.css. */
+:root {
+  --paper: oklch(98.3% 0.009 250); --paper-2: oklch(99.7% 0.002 250); --paper-3: #DCEEFF;
+  --ink: oklch(13% 0.012 252); --ink-2: oklch(30% 0.02 250); --muted: oklch(45% 0.03 250);
+  --rule: oklch(87% 0.02 250); --outline: oklch(13% 0.012 252);
+  --accent: #4DA2FF; --accent-ink: oklch(13% 0.012 252); --focus: oklch(46% 0.19 258);
+  --gold: #FFD731; --gold-ink: oklch(13% 0.012 252); --mint: #55DB9C;
+  --positive: oklch(44% 0.12 155); --positive-wash: color-mix(in oklab, #55DB9C 30%, oklch(99.7% 0.002 250));
+  --accent-wash: color-mix(in oklab, #4DA2FF 22%, oklch(99.7% 0.002 250));
+  --error: oklch(50% 0.19 27); --error-wash: oklch(95% 0.03 27);
+  --toast: #55DB9C; --toast-ink: oklch(13% 0.012 252);
+  --scrim: oklch(13% 0.012 252 / 0.45);
+  --font-display: "Arial Black", "Arial Bold", Arial, Helvetica, sans-serif;
+  --font-body: Arial, Helvetica, sans-serif;
+  --r-card: 24px; --r-control: 16px; --r-pill: 999px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --s6: 40px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: oklch(17% 0.025 252); --paper-2: oklch(22% 0.03 252); --paper-3: oklch(29% 0.05 252);
+  --ink: oklch(96% 0.008 250); --ink-2: oklch(86% 0.015 250); --muted: oklch(76% 0.025 250);
+  --rule: oklch(33% 0.035 252); --outline: oklch(56% 0.045 252);
+  --accent: oklch(74% 0.13 252); --accent-ink: oklch(17% 0.025 252); --focus: oklch(84% 0.1 252);
+  --gold: oklch(87% 0.15 95); --gold-ink: oklch(17% 0.025 252); --mint: oklch(80% 0.13 155);
+  --positive: oklch(80% 0.13 155); --positive-wash: oklch(30% 0.05 160); --accent-wash: oklch(38% 0.09 252);
+  --error: oklch(76% 0.14 25); --error-wash: oklch(28% 0.06 25);
+  --toast: oklch(30% 0.05 160); --toast-ink: oklch(96% 0.008 250); --scrim: oklch(5% 0.01 252 / 0.6);
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --paper: oklch(17% 0.025 252); --paper-2: oklch(22% 0.03 252); --paper-3: oklch(29% 0.05 252);
+  --ink: oklch(96% 0.008 250); --ink-2: oklch(86% 0.015 250); --muted: oklch(76% 0.025 250);
+  --rule: oklch(33% 0.035 252); --outline: oklch(56% 0.045 252);
+  --accent: oklch(74% 0.13 252); --accent-ink: oklch(17% 0.025 252); --focus: oklch(84% 0.1 252);
+  --gold: oklch(87% 0.15 95); --gold-ink: oklch(17% 0.025 252); --mint: oklch(80% 0.13 155);
+  --positive: oklch(80% 0.13 155); --positive-wash: oklch(30% 0.05 160); --accent-wash: oklch(38% 0.09 252);
+  --error: oklch(76% 0.14 25); --error-wash: oklch(28% 0.06 25);
+  --toast: oklch(30% 0.05 160); --toast-ink: oklch(96% 0.008 250); --scrim: oklch(5% 0.01 252 / 0.6);
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: 16px; line-height: 1.4;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0; }
+main { max-width: 430px; margin: 0 auto; padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: var(--s4); }
+h1, h2, h3, p { margin: 0; }
+h2 { font-family: var(--font-display); font-size: 1.2rem; letter-spacing: -0.01em; text-wrap: balance; }
+.num { font-variant-numeric: tabular-nums; }
+.muted { color: var(--muted); font-size: 0.875rem; }
+.small { font-size: 0.75rem; }
+.neg { color: var(--error); }
+.pos { color: var(--positive); }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); min-height: 56px; padding-top: var(--s2); }
+.logo { width: 170px; height: auto; display: block; }
+.logo-dark { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .logo-light { display: none; } :root:not([data-theme="light"]) .logo-dark { display: block; } }
+:root[data-theme="dark"] .logo-light { display: none; } :root[data-theme="dark"] .logo-dark { display: block; }
+.demo-chip { min-height: 32px; padding: 0 var(--s3); border-radius: var(--r-pill); border: 1px solid var(--outline); background: var(--gold); color: var(--gold-ink); font: 700 0.75rem var(--font-body); cursor: pointer; }
+
+.card { background: var(--paper-2); border: 2px solid var(--outline); border-radius: var(--r-card); padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); }
+.card.flat { border-width: 1px; border-color: var(--rule); }
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); }
+
+/* Lead card */
+.lead { background: var(--accent-wash); }
+.lead .label { font-weight: 700; display: flex; justify-content: space-between; align-items: center; }
+.lead .amount { font-family: var(--font-display); font-size: 3.2rem; line-height: 1; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+.lead .perday { font-size: 1.05rem; }
+.lead .lines { display: flex; flex-direction: column; gap: var(--s1); padding-top: var(--s2); border-top: 1px solid var(--rule); }
+.line { display: flex; justify-content: space-between; gap: var(--s3); }
+.line > span:last-child { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.info { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--outline); background: var(--paper-2); color: var(--ink); font: 700 1rem var(--font-body); cursor: pointer; position: relative; }
+.info::before { content: ""; position: absolute; inset: -4px; }
+.workings { display: flex; flex-direction: column; gap: var(--s1); background: var(--paper-2); border-radius: var(--r-control); padding: var(--s3); font-size: 0.9rem; }
+.workings .total { border-top: 1px solid var(--rule); padding-top: var(--s1); font-weight: 700; }
+.over-box { background: var(--error-wash); border-radius: var(--r-control); padding: var(--s3); display: flex; flex-direction: column; gap: var(--s1); }
+
+/* Checklist */
+.check { display: flex; gap: var(--s3); align-items: flex-start; padding: var(--s2) 0; border-top: 1px solid var(--rule); cursor: pointer; }
+.check:first-of-type { border-top: 0; }
+.box { flex: 0 0 26px; height: 26px; border-radius: 8px; border: 2px solid var(--outline); display: grid; place-items: center; font-weight: 900; background: var(--paper-2); }
+.check.done .box { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.check.done .text { color: var(--muted); text-decoration: line-through; }
+.check .sub { font-size: 0.8rem; color: var(--muted); }
+
+/* Limits */
+.limit { display: flex; flex-direction: column; gap: var(--s1); padding-block: var(--s2); border-top: 1px solid var(--rule); }
+.limit:first-of-type { border-top: 0; }
+.meter { height: 10px; border-radius: var(--r-pill); background: var(--paper-3); overflow: hidden; }
+.meter > i { display: block; height: 100%; background: var(--accent); border-radius: var(--r-pill); }
+.meter.warn > i { background: var(--gold); }
+.meter.over > i { background: var(--error); }
+.count { font-size: 0.85rem; color: var(--ink-2); }
+
+/* Tables of rows */
+.rows { display: flex; flex-direction: column; }
+.row { display: grid; grid-template-columns: 1fr auto auto; gap: var(--s3); padding-block: var(--s2); border-top: 1px solid var(--rule); align-items: baseline; }
+.row:first-child { border-top: 0; }
+.row .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.row.head { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.tag { font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: var(--r-pill); white-space: nowrap; }
+.tag.good { background: var(--positive-wash); color: var(--positive); }
+.tag.plain { background: var(--paper-3); color: var(--ink-2); }
+
+/* Buttons (four roles from the app's button system) */
+button { font-family: var(--font-body); }
+.btn { min-height: 48px; padding: 0 var(--s5); border: 0; border-radius: var(--r-pill); background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 1rem; cursor: pointer; }
+.btn.secondary { background: transparent; border: 1px solid var(--outline); color: var(--ink); min-height: 44px; }
+.btn.inline { min-height: 32px; padding: 0 var(--s3); font-size: 0.875rem; }
+.btn.link { background: none; color: var(--ink-2); text-decoration: underline; padding: 0 var(--s1); min-height: 44px; font-weight: 400; }
+.btn:focus-visible, .info:focus-visible, .demo-chip:focus-visible, .chip:focus-visible, .tab:focus-visible, .check:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.btn-row { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+/* Month header */
+.monthbar { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s2); }
+.monthbar h1 { font-family: var(--font-display); font-size: 1.44rem; }
+
+/* Prompt (month-end) */
+.prompt { background: var(--positive-wash); border-color: var(--positive); }
+.prompt h2 { font-size: 1.1rem; }
+
+/* Log */
+.seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); background: var(--paper-3); border-radius: var(--r-pill); padding: var(--s1); }
+.seg button { min-height: 40px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink); font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--paper-2); box-shadow: 0 0 0 1px var(--outline); }
+.amount-input { display: flex; align-items: baseline; justify-content: center; gap: var(--s1); font-family: var(--font-display); font-size: 3rem; }
+.amount-input input { width: 6.5ch; font: inherit; text-align: left; border: 0; background: transparent; color: var(--ink); padding: 0; min-width: 0; }
+.amount-input input:focus-visible { outline: 2px solid var(--focus); border-radius: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.chip { min-height: 44px; padding: 0 var(--s4); border-radius: var(--r-pill); border: 1px solid var(--outline); background: var(--paper-2); color: var(--ink); font-weight: 700; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper-2); }
+label { display: flex; flex-direction: column; gap: var(--s1); font-weight: 700; font-size: 0.875rem; }
+input[type="text"], input[type="number"], select { min-height: 48px; padding: 0 var(--s4); border: 2px solid var(--outline); border-radius: var(--r-control); background: var(--paper); color: var(--ink); font-size: 1rem; font-family: var(--font-body); width: 100%; }
+
+/* Tab bar */
+.tabbar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--paper-2); border-top: 1px solid var(--rule);
+  padding: var(--s2) max(16px, env(safe-area-inset-right, 0px)) calc(var(--s2) + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); z-index: 20; }
+.tabbar nav { max-width: 430px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); }
+.tab { min-height: 48px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink); font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+.tab[aria-current="page"] { background: var(--accent); color: var(--accent-ink); }
+
+/* Sheets and toast */
+.scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 30; display: flex; align-items: flex-end; justify-content: center; padding: 0 max(8px, env(safe-area-inset-right, 0px)) env(safe-area-inset-bottom, 0px) max(8px, env(safe-area-inset-left, 0px)); }
+.sheet { width: 100%; max-width: 430px; background: var(--paper-2); border-radius: var(--r-card) var(--r-card) 0 0; border: 2px solid var(--outline); border-bottom: 0; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s3); max-height: 85vh; overflow-y: auto; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(84px + env(safe-area-inset-bottom, 0px)); width: min(398px, calc(100% - 32px)); background: var(--toast); color: var(--toast-ink); border-radius: var(--r-control); padding: var(--s3) var(--s4); font-weight: 700; z-index: 40; display: flex; justify-content: space-between; gap: var(--s3); align-items: center; }
+.toast button { background: none; border: 0; color: inherit; font-weight: 700; cursor: pointer; min-height: 44px; min-width: 44px; }
+
+/* Setup */
+.prompt-item { border-top: 1px solid var(--rule); padding-block: var(--s3); display: flex; flex-direction: column; gap: var(--s2); }
+.prompt-item:first-child { border-top: 0; }
+.prompt-item > button { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); text-align: left; background: none; border: 0; color: var(--ink); font: 700 1rem var(--font-body); cursor: pointer; min-height: 44px; padding: 0; }
+.prompt-item .ex { font-weight: 400; font-size: 0.85rem; color: var(--muted); display: block; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+@media (max-width: 360px) { .grid2 { grid-template-columns: 1fr; } .lead .amount { font-size: 2.6rem; } }
+@media (prefers-reduced-motion: no-preference) { .glow { animation: glow 1.6s var(--ease, ease-out) 1; } @keyframes glow { 0% { box-shadow: 0 0 0 0 var(--mint); } 30% { box-shadow: 0 0 0 6px var(--mint); } 100% { box-shadow: 0 0 0 0 transparent; } } }
+</style>
+</head>
+<body>
+
+<main id="app" aria-live="off"></main>
+<div class="tabbar" id="tabbar"><nav aria-label="Screens">
+  <button class="tab" data-tab="month">Month</button>
+  <button class="tab" data-tab="log">Log</button>
+  <button class="tab" data-tab="budget">Budget</button>
+  <button class="tab" data-tab="history">History</button>
+</nav></div>
+<div id="layer"></div>
+<div id="toast" class="toast" role="status" hidden><span id="toast-text"></span><button type="button" id="toast-close" aria-label="Close message">✕</button></div>
+
+<script>
+/* ── Made-up person: "Mei". Not anyone's real data. ───────────────────────── */
+const PLAN = {
+  income: [{ name: "Salary (take-home)", amt: 3200 }],
+  bills: [{ name: "Phone plan", amt: 30 }, { name: "Health insurance", amt: 85 }, { name: "Town council (S&CC)", amt: 62 }, { name: "Home internet", amt: 45 }],
+  savings: [{ name: "Monthly savings plan", amt: 300 }],
+  saveups: [
+    { name: "Life insurance", amt: 95, yearly: 1140, due: 3 },
+    { name: "Property tax", amt: 40, yearly: 480, due: 6 },
+    { name: "Income tax", amt: 60, yearly: 720, due: 4 },
+    { name: "CNY ang bao", amt: 50, yearly: 600, due: 2 },
+  ],
+  limits: { "Food": 800, "Transport": 200, "Groceries": 300, "Misc": 350 },
+  noLimit: ["Household"],
+  countLimit: { cat: "Food", over: 40, perWeek: 2, label: "Nice meals over $40" },
+  oneOffAt: 250,
+};
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MON3 = MONTHS.map(m => m.slice(0, 3));
+const sum = a => a.reduce((x, y) => x + y, 0);
+const fmt = n => (n < 0 ? "−$" : "$") + Math.abs(n).toLocaleString("en-SG", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmt0 = n => (n < 0 ? "−$" : "$") + Math.abs(Math.round(n)).toLocaleString("en-SG");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* Deterministic made-up spending, so every tester sees the same numbers. */
+function rng(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+function genMonth(year, month, uptoDay, seed, extra = []) {
+  const r = rng(seed), out = [];
+  const add = (day, cat, amt, note, kind = "expense") => out.push({ id: `${month}-${out.length}`, day, cat, amt: Math.round(amt * 100) / 100, note, kind });
+  for (let d = 1; d <= uptoDay; d++) {
+    const wd = new Date(year, month - 1, d).getDay(), weekday = wd >= 1 && wd <= 5;
+    if (weekday && r() < 0.85) add(d, "Food", 1.6, "Kopi");
+    if (weekday) add(d, "Food", 6 + r() * 3.8, "Lunch");
+    if (r() < 0.11) add(d, "Food", 46 + r() * 22, "Dinner with friends");
+    else if (r() < 0.85) add(d, "Food", 6.5 + r() * 6, "Dinner");
+    if (r() < 0.2) add(d, "Food", 4.8, "Bubble tea");
+    if (weekday) add(d, "Transport", 3.6 + r() * 1.4, "MRT");
+    if (r() < 0.13) add(d, "Transport", 14 + r() * 9, "Grab");
+    if (wd === 6) add(d, "Groceries", 45 + r() * 25, "NTUC");
+    if (r() < 0.12) add(d, "Misc", 8 + r() * 30, ["Shopee", "Haircut", "Movie", "Gift for Jess", "Pharmacy"][Math.floor(r() * 5)]);
+    if (r() < 0.05) add(d, "Household", 6 + r() * 10, "Detergent");
+    if (d === 3) add(d, "Misc", 10.98, "Spotify");
+  }
+  extra.forEach(e => add(e.day, e.cat, e.amt, e.note, e.kind || "expense"));
+  out.forEach(e => { if (e.kind === "expense" && e.amt >= PLAN.oneOffAt) e.oneOff = true; });
+  return out;
+}
+
+/* What happened before this month (for "this year" figures). */
+const HISTORY = {
+  oneOffs: [
+    { month: 1, note: "Phone screen repair", amt: 320, group: "Phone and laptop" },
+    { month: 2, note: "New laptop", amt: 1150, group: "Phone and laptop" },
+    { month: 3, note: "Flight to Bangkok", amt: 420, group: "Travel" },
+    { month: 4, note: "Dentist: root canal", amt: 1780, group: "Health" },
+  ],
+  movedToSavings: [{ month: 2, amt: 200 }],
+  usual: { "Kopi": { n: 30, amt: 48 }, "Bubble tea": { n: 9, amt: 43.2 }, "Grab": { n: 4, amt: 72 } }, // a usual full month (Jan–Feb)
+};
+const GROUPS = { "Flight to Bangkok": "Travel", "Dentist: root canal": "Health", "New laptop": "Phone and laptop", "Phone screen repair": "Phone and laptop" };
+
+/* The four test scenarios (facilitator picks one with #mid-march, #end-april, #end-may, #setup). */
+const SCENARIOS = {
+  "mid-march": { label: "15 March: a normal month", year: 2026, month: 3, day: 15, seed: 11,
+    extra: [{ day: 8, cat: "Misc", amt: 420, note: "Flight to Bangkok" }],
+    checklist: { salary: true, bills: true, savings: false, due: false },
+    pots: { "Life insurance": 1140, "Property tax": 400, "Income tax": 660, "CNY ang bao": 50 } },
+  "end-april": { label: "30 April: a month that ran out", year: 2026, month: 4, day: 30, seed: 29,
+    extra: [{ day: 12, cat: "Misc", amt: 1780, note: "Dentist: root canal" }],
+    checklist: { salary: true, bills: true, savings: true, due: true },
+    pots: { "Life insurance": 95, "Property tax": 440, "Income tax": 0, "CNY ang bao": 100 } },
+  "end-may": { label: "28 May: money left near month end", year: 2026, month: 5, day: 28, seed: 7,
+    extra: [], checklist: { salary: true, bills: true, savings: true, due: true },
+    pots: { "Life insurance": 190, "Property tax": 480, "Income tax": 60, "CNY ang bao": 150 } },
+};
+
+let S = null, state = null, tab = "month", openWorkings = false, promptDone = false;
+function load(key) {
+  S = SCENARIOS[key];
+  state = { key, entries: genMonth(S.year, S.month, S.day, S.seed, S.extra), checklist: { ...S.checklist }, saved: 0, pots: { ...S.pots } };
+  openWorkings = false; promptDone = false;
+}
+
+/* ── The rules (same as the agreed design) ─────────────────────────────── */
+function calc() {
+  const dim = new Date(S.year, S.month, 0).getDate();
+  const daily = state.entries.filter(e => e.kind === "expense");
+  const spent = sum(daily.map(e => e.amt));
+  const money = sum(PLAN.income.map(x => x.amt)), bills = sum(PLAN.bills.map(x => x.amt));
+  const saveup = sum(PLAN.saveups.map(x => x.amt)), savings = sum(PLAN.savings.map(x => x.amt));
+  const moved = sum(state.entries.filter(e => e.kind === "saved").map(e => e.amt));
+  const left = money - bills - saveup - savings - spent - moved;
+  const byCat = {}; daily.forEach(e => byCat[e.cat] = (byCat[e.cat] || 0) + e.amt);
+  const limitsLeft = sum(Object.entries(PLAN.limits).map(([c, l]) => Math.max(0, l - (byCat[c] || 0))));
+  const spare = left - limitsLeft;
+  const daysLeft = dim - S.day + 1;
+  const perDay = Math.max(0, Math.min(limitsLeft, left)) / daysLeft;
+  const putAsidePrev = savings * (S.month - 1) + sum(HISTORY.movedToSavings.filter(m => m.month < S.month).map(m => m.amt));
+  const putAsideYear = putAsidePrev + savings + moved;
+  const kept = left + savings + moved;
+  const biggest = daily.filter(e => e.oneOff).sort((a, b) => b.amt - a.amt)[0];
+  return { dim, spent, money, bills, saveup, savings, moved, left, byCat, limitsLeft, spare, daysLeft, perDay, putAsideYear, kept, biggest };
+}
+function weekCount() {
+  const c = PLAN.countLimit, today = new Date(S.year, S.month - 1, S.day);
+  const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  return state.entries.filter(e => e.cat === c.cat && e.kind === "expense" && e.amt > c.over && e.amt < PLAN.oneOffAt && new Date(S.year, S.month - 1, e.day) >= monday).length;
+}
+function oneOffsThisYear() {
+  const items = HISTORY.oneOffs.filter(o => o.month < S.month).concat(
+    state.entries.filter(e => e.oneOff).map(e => ({ month: S.month, note: e.note, amt: e.amt, group: GROUPS[e.note] || "Other" })));
+  const groups = {};
+  items.forEach(i => { (groups[i.group] = groups[i.group] || { amt: 0, n: 0, items: [] }); groups[i.group].amt += i.amt; groups[i.group].n++; groups[i.group].items.push(i); });
+  return { total: sum(items.map(i => i.amt)), groups };
+}
+function repeatBuys() {
+  const dim = new Date(S.year, S.month, 0).getDate(), share = S.day / dim;
+  return Object.entries(HISTORY.usual).map(([name, u]) => {
+    const es = state.entries.filter(e => e.note === name);
+    const n = es.length, amt = sum(es.map(e => e.amt));
+    const un = u.n * share, ua = u.amt * share;
+    const trend = n < un * 0.8 ? "down" : n > un * 1.2 ? "up" : "same";
+    return { name, n, amt, un, ua, trend };
+  });
+}
+
+/* ── Screens ───────────────────────────────────────────────────────────── */
+const app = document.getElementById("app");
+function header() {
+  return `<div class="topbar"><img class="logo logo-light" alt="How to Get Rich" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjEzMCAzNDAgMTQ1MCAzNjAiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iSG93IHRvIEdldCBSaWNoIj48dGl0bGU+SG93IHRvIEdldCBSaWNoPC90aXRsZT48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTYwLDM3MCkgc2NhbGUoLjcpIj48ZyBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGZpbGw9IiM0ZGEyZmYiIGQ9Ik00OTUgMzM5IEM0NjkgMzM5IDQ1MCAzMjIgNDUwIDI5OCBDNDUwIDI3NCA0NjkgMjUzIDQ5NSAyNTMgSDYzNyBDNjM5IDIxMSA2NTggMTg0IDY5NCAxODQgSDgzMSBDODM0IDE0NyA4NTMgMTI0IDg4OSAxMjQgSDEwMzggQzEwNjggMTI0IDEwODYgMTQ0IDEwODYgMTcyIEMxMDg2IDIwMSAxMDY3IDIxOCAxMDM4IDIxOCBIOTAyIEM5MDAgMjUxIDg4MyAyNjkgODU0IDI2OSBINzEyIEM3MTAgMzExIDY5MSAzMzkgNjYzIDMzOSBaIi8+PHBhdGggZmlsbD0iI2ZmZDczMSIgZD0iTTg2NyAxMjQgUTg1MiAxMjEgODYxIDEwNSBMODg1IDY1IFE4OTAgNTUgOTAzIDU1IEgxMDE3IFExMDI5IDU1IDEwMzQgNjcgTDEwNTAgMTA3IFExMDU1IDEyMCAxMDQwIDEyNCBaIi8+PC9nPjxwYXRoIGZpbGw9IiNkZGEwMTMiIGQ9Ik0xMDA2IDY3IEwxMDE5IDYzIEwxMDQwIDExMSBMMTAyNCAxMTYgWiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgzNTAsMCkiPjxwYXRoIGZpbGw9IiMwMDAiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTEwOTQsMzU2IEwxMTIwLDM1NiBMMTEyMCwzNTcgTDExMjgsMzU3IEwxMTI4LDM1OCBMMTEzNCwzNTggTDExMzQsMzU5IEwxMTQyLDM2MCBMMTE0MiwzNjEgTDExNDUsMzYxIEwxMTQ1LDM2MiBMMTE0NywzNjIgTDExNDcsMzYzIEwxMTUwLDM2MyBMMTE1MCwzNjQgTDExNTQsMzY1IEwxMTU1LDM2NyBMMTE1NywzNjcgTDExNTgsMzY5IEwxMTYwLDM2OSBMMTE2MiwzNzIgTDExNjQsMzcyIEwxMTY0LDM3MyBMMTE2NywzNzUgTDExNjcsMzc3IEwxMTcxLDM4MCBMMTE3MSwzODIgTDExNzIsMzgyIEwxMTcyLDM4NCBMMTE3NCwzODUgTDExNzQsMzg3IEwxMTc1LDM4NyBMMTE3NSwzODkgTDExNzYsMzg5IEwxMTc2LDM5MSBMMTE3NywzOTEgTDExNzcsMzk0IEwxMTc4LDM5NCBMMTE3OCwzOTYgTDExNzksMzk2IEwxMTc5LDM5OSBMMTE4MCwzOTkgTDExODAsNDAyIEwxMTgxLDQwMiBMMTE4MSw0MDYgTDExODIsNDA2IEwxMTgyLDQxMSBMMTE4Myw0MTEgTDExODQsNDI3IEwxMTg1LDQyNyBMMTE4NCw0NTMgTDExODMsNDUzIEwxMTgzLDQ1OSBMMTE4Miw0NTkgTDExODEsNDY4IEwxMTgwLDQ2OCBMMTE3OSw0NzQgTDExNzgsNDc0IEwxMTc4LDQ3NiBMMTE3Nyw0NzYgTDExNzcsNDc5IEwxMTc2LDQ3OSBMMTE3NCw0ODUgTDExNzIsNDg2IEwxMTcyLDQ4OCBMMTE3MCw0ODkgTDExNzAsNDkxIEwxMTY1LDQ5NSBMMTE2NSw0OTcgTDExNjMsNDk3IEwxMTU5LDUwMiBMMTE1Nyw1MDIgTDExNTcsNTAzIEwxMTU0LDUwNCBMMTE1Myw1MDYgTDExNTEsNTA2IEwxMTUxLDUwNyBMMTE0OSw1MDcgTDExNDksNTA4IEwxMTQ2LDUwOCBMMTE0Niw1MDkgTDExNDQsNTA5IEwxMTQ0LDUxMCBMMTE0Miw1MTAgTDExNDIsNTExIEwxMTM4LDUxMSBMMTEzOCw1MTIgTDExMzQsNTEyIEwxMTM0LDUxMyBMMTEyOSw1MTMgTDExMjksNTE0IEwxMTIyLDUxNCBMMTEyMiw1MTUgTDExMjEsNTE1IEwxMDkwLDUxNSBMMTA5MCw1MTQgTDEwODMsNTE0IEwxMDgzLDUxMyBMMTA3NCw1MTIgTDEwNzQsNTExIEwxMDcxLDUxMSBMMTA3MSw1MTAgTDEwNjgsNTEwIEwxMDY4LDUwOSBMMTA2NSw1MDkgTDEwNjUsNTA4IEwxMDU5LDUwNiBMMTA1OSw1MDUgTDEwNTYsNTA0IEwxMDUzLDUwMCBMMTA1MSw1MDAgTDEwNTEsNDk5IEwxMDQ2LDQ5NSBMMTA0Niw0OTMgTDEwNDMsNDkxIEwxMDQzLDQ4OSBMMTA0MSw0ODggTDEwNDEsNDg2IEwxMDQwLDQ4NiBMMTA0MCw0ODQgTDEwMzksNDg0IEwxMDM5LDQ4MiBMMTAzOCw0ODIgTDEwMzgsNDgwIEwxMDM3LDQ4MCBMMTAzNyw0NzggTDEwMzYsNDc4IEwxMDM2LDQ3NSBMMTAzNSw0NzUgTDEwMzUsNDcyIEwxMDM0LDQ3MiBMMTAzNCw0NjkgTDEwMzMsNDY5IEwxMDMzLDQ2NSBMMTAzMiw0NjUgTDEwMzIsNDYwIEwxMDMxLDQ2MCBMMTAzMSw0NTMgTDEwMzAsNDUzIEwxMDMwLDQyNCBMMTAzMSw0MjQgTDEwMzEsNDE2IEwxMDMyLDQxNiBMMTAzMiw0MTEgTDEwMzMsNDExIEwxMDMzLDQwNyBMMTAzNCw0MDcgTDEwMzQsNDA0IEwxMDM1LDQwNCBMMTAzNSw0MDEgTDEwMzYsNDAxIEwxMDM3LDM5NSBMMTAzOCwzOTUgTDEwMzksMzkwIEwxMDQwLDM5MCBMMTA0MSwzODYgTDEwNDMsMzg1IEwxMDQ0LDM4MSBMMTA0NSwzODEgTDEwNDUsMzgwIEwxMDQ2LDM4MCBMMTA0NiwzNzkgTDEwNDcsMzc5IEwxMDQ3LDM3OCBMMTA0OCwzNzggTDEwNDgsMzc3IEwxMDQ5LDM3NyBMMTA0OSwzNzYgTDEwNTAsMzc2IEwxMDUwLDM3NSBMMTA1MSwzNzUgTDEwNTYsMzY5IEwxMDU4LDM2OSBMMTA1OSwzNjcgTDEwNjMsMzY2IEwxMDY0LDM2NCBMMTA2OSwzNjMgTDEwNjksMzYyIEwxMDc0LDM2MSBMMTA3NCwzNjAgTDEwNzcsMzYwIEwxMDc3LDM1OSBMMTA4NiwzNTggTDEwODYsMzU3IEwxMDk0LDM1NyBMMTA5NCwzNTYgWiBNNTcwLDM1NyBMNjAxLDM1NyBMNjAxLDM1OCBMNjA3LDM1OCBMNjA3LDM1OSBMNjE2LDM2MCBMNjE2LDM2MSBMNjIyLDM2MiBMNjIyLDM2MyBMNjI0LDM2MyBMNjI0LDM2NCBMNjMwLDM2NiBMNjMwLDM2NyBMNjMzLDM2OCBMNjM2LDM3MiBMNjM4LDM3MiBMNjM4LDM3NCBMNjM5LDM3NCBMNjM5LDM3NSBMNjQzLDM3OCBMNjQzLDM4MCBMNjQ1LDM4MSBMNjQ1LDM4MyBMNjQ2LDM4MyBMNjQ2LDM4NSBMNjQ3LDM4NSBMNjQ3LDM4NyBMNjQ4LDM4NyBMNjQ4LDM4OSBMNjQ5LDM4OSBMNjQ5LDM5MiBMNjUwLDM5MiBMNjUwLDM5NCBMNjUxLDM5NCBMNjUyLDQwMSBMNjUzLDQwMSBMNjUzLDQwNSBMNjU0LDQwNSBMNjU1LDQxOSBMNjU2LDQxOSBMNjU2LDQ1MSBMNjU1LDQ1MSBMNjU1LDQ1OSBMNjU0LDQ1OSBMNjU0LDQ2NSBMNjUzLDQ2NSBMNjUyLDQ3MyBMNjUxLDQ3MyBMNjUwLDQ3OSBMNjQ5LDQ3OSBMNjQ5LDQ4MSBMNjQ4LDQ4MSBMNjQ4LDQ4MyBMNjQ3LDQ4MyBMNjQ1LDQ4OSBMNjQzLDQ5MCBMNjQzLDQ5MiBMNjQxLDQ5MyBMNjQxLDQ5NSBMNjQwLDQ5NSBMNjQwLDQ5NiBMNjM5LDQ5NiBMNjM0LDUwMiBMNjMyLDUwMiBMNjMwLDUwNSBMNjI0LDUwNyBMNjIzLDUwOSBMNjIwLDUwOSBMNjIwLDUxMCBMNjE1LDUxMSBMNjE1LDUxMiBMNjA3LDUxMyBMNjA3LDUxNCBMNTk3LDUxNSBMNTg4LDUxNSBMNTg4LDUxNiBMNTY1LDUxNSBMNTY1LDUxNCBMNTU5LDUxNCBMNTU5LDUxMyBMNTUxLDUxMiBMNTUxLDUxMSBMNTQ5LDUxMSBMNTQ5LDUxMCBMNTQ2LDUxMCBMNTQ2LDUwOSBMNTQ0LDUwOSBMNTQ0LDUwOCBMNTQyLDUwOCBMNTQyLDUwNyBMNTM2LDUwNSBMNTM0LDUwMiBMNTMyLDUwMiBMNTMyLDUwMSBMNTI4LDQ5OCBMNTI4LDQ5NiBMNTI3LDQ5NiBMNTI3LDQ5NSBMNTI1LDQ5NCBMNTI1LDQ5MiBMNTIzLDQ5MSBMNTIzLDQ4OSBMNTIyLDQ4OSBMNTIyLDQ4NyBMNTIxLDQ4NyBMNTIxLDQ4NSBMNTIwLDQ4NSBMNTIwLDQ4MyBMNTE5LDQ4MyBMNTE5LDQ4MCBMNTE4LDQ4MCBMNTE4LDQ3OCBMNTE3LDQ3OCBMNTE2LDQ3MSBMNTE1LDQ3MSBMNTE1LDQ2NiBMNTE0LDQ2NiBMNTE0LDQ2MSBMNTEzLDQ2MSBMNTEzLDQ1MSBMNTEyLDQ1MSBMNTEyLDQyOCBMNTEzLDQyOCBMNTEzLDQxOCBMNTE0LDQxOCBMNTE0LDQxMyBMNTE1LDQxMyBMNTE1LDQwOCBMNTE2LDQwOCBMNTE2LDQwNCBMNTE3LDQwNCBMNTE3LDQwMSBMNTE4LDQwMSBMNTE4LDM5NyBMNTE5LDM5NyBMNTE5LDM5NSBMNTIwLDM5NSBMNTIwLDM5MiBMNTIxLDM5MiBMNTIxLDM5MCBMNTIyLDM5MCBMNTI0LDM4NCBMNTI2LDM4MyBMNTI2LDM4MSBMNTI4LDM4MCBMNTI4LDM3OCBMNTI5LDM3OCBMNTI5LDM3NyBMNTMwLDM3NyBMNTMwLDM3NiBMNTMxLDM3NiBMNTM2LDM3MCBMNTM4LDM3MCBMNTQwLDM2NyBMNTQyLDM2NyBMNTQyLDM2NiBMNTQ0LDM2NiBMNTQ0LDM2NSBMNTQ2LDM2NSBMNTQ2LDM2NCBMNTQ4LDM2NCBMNTQ4LDM2MyBMNTUwLDM2MyBMNTUwLDM2MiBMNTUzLDM2MiBMNTUzLDM2MSBMNTU2LDM2MSBMNTU2LDM2MCBMNTYwLDM2MCBMNTYwLDM1OSBMNTY0LDM1OSBMNTY0LDM1OCBMNTcwLDM1OCBMNTcwLDM1NyBaIE05MTEsMzU4IEwxMDI1LDM1OCBMMTAyNSwzNTkgTDEwMjcsMzU5IEwxMDI3LDM2MCBMMTAyOSwzNjEgTDEwMjksMzYzIEwxMDMwLDM2MyBMMTAzMCw0MDkgTDEwMjksNDA5IEwxMDI5LDQxMSBMMTAyOCw0MTEgTDEwMjcsNDEzIEwxMDAxLDQxMyBMMTAwMSw0ODggTDEwMDEsNTA5IEwxMDAwLDUwOSBMMTAwMCw1MTEgTDk5OCw1MTEgTDk5OCw1MTIgTDk5Niw1MTIgTDk5Niw1MTMgTDkzNyw1MTMgTDkzNyw1MTIgTDkzMyw1MTEgTDkzMyw1MDkgTDkzMiw1MDkgTDkzMiw0MTMgTDkxMCw0MTMgTDkxMCw0MTIgTDkwNyw0MTAgTDkwNywzNjIgTDkwOCwzNjIgTDkwOCwzNjAgTDkxMSwzNTkgTDkxMSwzNTggWiBNMzUzLDM1OSBMNDEzLDM1OSBMNDEzLDM2MCBMNDE1LDM2MSBMNDE1LDM2MyBMNDE2LDM2MyBMNDE2LDQwOSBMNDM2LDQwOSBMNDM2LDQwOCBMNDM3LDQwOCBMNDM3LDM2MyBMNDM4LDM2MyBMNDM4LDM2MSBMNDM5LDM2MSBMNDQwLDM1OSBMNTAzLDM1OSBMNTAzLDM2MCBMNTA1LDM2MCBMNTA1LDM2MiBMNTA2LDM2MiBMNTA2LDUwOSBMNTA1LDUwOSBMNTAzLDUxMiBMNDk3LDUxMiBMNDQxLDUxMiBMNDQxLDUxMSBMNDM5LDUxMSBMNDM4LDUwOCBMNDM3LDUwOCBMNDM3LDQ1NyBMNDE2LDQ1NyBMNDE2LDUwOCBMNDE1LDUwOCBMNDE0LDUxMSBMNDEyLDUxMSBMNDEyLDUxMiBMMzUzLDUxMiBMMzUzLDUxMSBMMzUwLDUxMCBMMzUwLDUwOCBMMzQ5LDUwOCBMMzQ5LDM2MyBMMzUwLDM2MyBMMzUwLDM2MSBMMzUzLDM2MCBMMzUzLDM1OSBaIE02NTYsMzU5IEw3MTYsMzU5IEw3MTYsMzYwIEw3MTksMzYxIEw3MTksMzY1IEw3MjAsMzY1IEw3MjAsMzczIEw3MjEsMzczIEw3MjEsMzgwIEw3MjIsMzgwIEw3MjIsMzg3IEw3MjMsMzg3IEw3MjMsMzk1IEw3MjQsMzk1IEw3MjQsNDAyIEw3MjUsNDAyIEw3MjUsNDEwIEw3MjYsNDEwIEw3MjYsNDE3IEw3MjcsNDE3IEw3MjcsNDI0IEw3MjgsNDI0IEw3MjgsNDMxIEw3MjksNDMxIEw3MjksNDM4IEw3MzAsNDM4IEw3MzAsNDQwIEw3MzEsNDQwIEw3MzEsNDMzIEw3MzIsNDMzIEw3MzIsNDI2IEw3MzMsNDI2IEw3MzMsNDE4IEw3MzQsNDE4IEw3MzQsNDExIEw3MzUsNDExIEw3MzUsNDAzIEw3MzYsNDAzIEw3MzYsMzk1IEw3MzcsMzk1IEw3MzcsMzg4IEw3MzgsMzg4IEw3MzgsMzgwIEw3MzksMzgwIEw3NDAsMzY2IEw3NDEsMzY2IEw3NDEsMzYyIEw3NDIsMzYyIEw3NDIsMzYwIEw3NDQsMzYwIEw3NDQsMzU5IEw3OTAsMzU5IEw3OTAsMzYwIEw3OTIsMzYxIEw3OTIsMzY0IEw3OTMsMzY0IEw3OTMsMzc0IEw3OTQsMzc0IEw3OTQsMzgzIEw3OTUsMzgzIEw3OTUsMzkzIEw3OTYsMzkzIEw3OTYsNDAzIEw3OTcsNDAzIEw3OTcsNDEzIEw3OTgsNDEzIEw3OTgsNDI0IEw3OTksNDI0IEw3OTksNDM0IEw4MDAsNDM0IEw4MDAsNDM5IEw4MDEsNDM5IEw4MDIsNDI4IEw4MDMsNDI4IEw4MDMsNDIzIEw4MDQsNDIzIEw4MDQsNDE3IEw4MDUsNDE3IEw4MDUsNDExIEw4MDYsNDExIEw4MDYsNDA1IEw4MDcsNDA1IEw4MDcsMzk5IEw4MDgsMzk5IEw4MDgsMzkzIEw4MDksMzkzIEw4MDksMzg3IEw4MTAsMzg3IEw4MTAsMzgxIEw4MTEsMzgxIEw4MTEsMzc1IEw4MTIsMzc1IEw4MTMsMzYzIEw4MTQsMzYzIEw4MTQsMzYxIEw4MTUsMzYxIEw4MTYsMzU5IEw4NzYsMzU5IEw4NzYsMzYwIEw4NzgsMzYxIEw4NzgsMzcwIEw4NzcsMzcwIEw4NzcsMzc2IEw4NzYsMzc2IEw4NzYsMzgxIEw4NzUsMzgxIEw4NzUsMzg2IEw4NzQsMzg2IEw4NzQsMzkxIEw4NzMsMzkxIEw4NzMsMzk2IEw4NzIsMzk2IEw4NzIsNDAxIEw4NzEsNDAxIEw4NzEsNDA2IEw4NzAsNDA2IEw4NzAsNDA3IEw4NjksNDE2IEw4NjgsNDE2IEw4NjgsNDIyIEw4NjcsNDIyIEw4NjcsNDI2IEw4NjYsNDI2IEw4NjYsNDMyIEw4NjUsNDMyIEw4NjUsNDM3IEw4NjQsNDM3IEw4NjQsNDQyIEw4NjMsNDQyIEw4NjMsNDQ3IEw4NjIsNDQ3IEw4NjIsNDUyIEw4NjEsNDUyIEw4NjEsNDU4IEw4NjAsNDU4IEw4NTksNDY4IEw4NTgsNDY4IEw4NTcsNDc3IEw4NTYsNDc3IEw4NTYsNDgyIEw4NTUsNDgyIEw4NTUsNDg3IEw4NTQsNDg3IEw4NTQsNDkyIEw4NTMsNDkyIEw4NTIsNTAzIEw4NTEsNTAzIEw4NTEsNTA3IEw4NTAsNTA3IEw4NTAsNTA5IEw4NDksNTA5IEw4NDcsNTEyIEw3ODAsNTEyIEw3ODAsNTExIEw3NzcsNTA5IEw3NzcsNTA3IEw3NzYsNTA3IEw3NzUsNDk2IEw3NzQsNDk2IEw3NzQsNDkxIEw3NzMsNDkxIEw3NzMsNDg2IEw3NzIsNDg2IEw3NzEsNDc1IEw3NzAsNDc1IEw3NzAsNDcwIEw3NjksNDcwIEw3NjksNDY1IEw3NjgsNDY1IEw3NjgsNDYwIEw3NjcsNDYwIEw3NjYsNDUxIEw3NjUsNDUxIEw3NjUsNDU0IEw3NjQsNDU0IEw3NjQsNDU4IEw3NjMsNDU4IEw3NjMsNDYyIEw3NjIsNDYyIEw3NjIsNDY2IEw3NjEsNDY2IEw3NjEsNDcwIEw3NjAsNDcwIEw3NjAsNDc0IEw3NTksNDc0IEw3NTksNDc5IEw3NTgsNDc5IEw3NTgsNDgzIEw3NTcsNDgzIEw3NTcsNDg4IEw3NTYsNDg4IEw3NTYsNDkyIEw3NTUsNDkyIEw3NTUsNDk2IEw3NTQsNDk2IEw3NTQsNTAxIEw3NTMsNTAxIEw3NTIsNTA5IEw3NTEsNTA5IEw3NTAsNTExIEw3NDgsNTExIEw3NDgsNTEyIEw2ODIsNTEyIEw2ODIsNTExIEw2NzgsNTA4IEw2NzcsNDk2IEw2NzYsNDk2IEw2NzYsNDkxIEw2NzUsNDkxIEw2NzUsNDg2IEw2NzQsNDg2IEw2NzQsNDgwIEw2NzMsNDgwIEw2NzIsNDY5IEw2NzEsNDY5IEw2NzEsNDY0IEw2NzAsNDY0IEw2NzAsNDU4IEw2NjksNDU4IEw2NjksNDUzIEw2NjgsNDUzIEw2NjgsNDQ4IEw2NjcsNDQ4IEw2NjcsNDQyIEw2NjYsNDQyIEw2NjYsNDM2IEw2NjUsNDM2IEw2NjUsNDMxIEw2NjQsNDMxIEw2NjMsNDE5IEw2NjIsNDE5IEw2NjIsNDE0IEw2NjEsNDE0IEw2NjEsNDA5IEw2NjAsNDA5IEw2NjAsNDAzIEw2NTksNDAzIEw2NTksMzk3IEw2NTgsMzk3IEw2NTgsMzkyIEw2NTcsMzkyIEw2NTYsMzc5IEw2NTUsMzc5IEw2NTQsMzY4IEw2NTMsMzY4IEw2NTMsMzYyIEw2NTQsMzYyIEw2NTYsMzU5IFogTTU4Myw0MDcgTDU3OCw0MTEgTDU3OCw0MTQgTDU3Nyw0MTQgTDU3Nyw0MTcgTDU3Niw0MTcgTDU3Niw0MjIgTDU3NSw0MjIgTDU3NSw0NDkgTDU3Niw0NDkgTDU3Niw0NTUgTDU3Nyw0NTUgTDU3OCw0NjAgTDU3OSw0NjAgTDU4MSw0NjMgTDU4NSw0NjMgTDU4OSw0NjEgTDU4OSw0NTkgTDU5MCw0NTkgTDU5MCw0NTcgTDU5MSw0NTcgTDU5MSw0NTMgTDU5Miw0NTMgTDU5Myw0MjcgTDU5Miw0MjcgTDU5Miw0MTggTDU5MSw0MTggTDU5MCw0MTEgTDU4OSw0MTEgTDU4Niw0MDcgTDU4Myw0MDcgWiBNMTEwNCw0MDcgTDExMDMsNDA3IEwxMTAyLDQwOSBMMTEwMCw0MDkgTDExMDAsNDExIEwxMDk5LDQxMSBMMTA5OSw0MTMgTDEwOTgsNDEzIEwxMDk4LDQxNiBMMTA5Nyw0MTYgTDEwOTcsNDIxIEwxMDk2LDQyMSBMMTA5Niw0NDkgTDEwOTcsNDQ5IEwxMDk3LDQ1NCBMMTA5OCw0NTQgTDEwOTksNDU5IEwxMTAwLDQ1OSBMMTEwMiw0NjIgTDExMDcsNDYzIEwxMTA3LDQ2MiBMMTEwOSw0NjIgTDExMDksNDYxIEwxMTExLDQ2MCBMMTExMiw0NTUgTDExMTMsNDU1IEwxMTEzLDQ1MCBMMTExNCw0NTAgTDExMTQsNDQwIEwxMTE1LDQ0MCBMMTExNSw0MzAgTDExMTQsNDMwIEwxMTE0LDQxOSBMMTExMyw0MTkgTDExMTIsNDEyIEwxMTExLDQxMiBMMTExMSw0MTAgTDExMTAsNDEwIEwxMTA5LDQwOCBMMTEwNCw0MDcgWiBNMzg4LDUyMiBMNDE0LDUyMiBMNDE0LDUyMyBMNDIzLDUyMyBMNDIzLDUyNCBMNDMzLDUyNSBMNDMzLDUyNiBMNDM2LDUyNiBMNDM2LDUyNyBMNDQyLDUyOCBMNDQyLDUyOSBMNDQ2LDUzMCBMNDQ3LDUzMiBMNDQ5LDUzMiBMNDQ5LDUzMyBMNDU0LDUzNyBMNDU0LDUzOSBMNDU1LDUzOSBMNDU1LDU0MSBMNDU2LDU0MSBMNDU2LDU0NSBMNDU3LDU0NSBMNDU3LDU0OSBMNDU4LDU0OSBMNDU4LDU2NyBMNDU5LDU2NyBMNDU5LDU3MCBMNDU4LDU3MCBMNDU4LDU3OCBMNDU3LDU3OCBMNDU2LDU4MCBMNDUwLDU4MCBMNDUwLDU4MSBMNDM3LDU4MSBMNDM3LDU4MiBMNDI1LDU4MiBMNDI1LDU4MyBMNDE1LDU4MyBMNDE1LDU4NCBMNDExLDU4NCBMNDExLDU4MyBMNDA5LDU4MyBMNDA5LDU4MiBMNDA4LDU4MiBMNDA4LDU3OSBMNDA3LDU3OSBMNDA3LDU3NyBMNDA2LDU3NyBMNDA2LDU3NSBMNDA0LDU3NSBMNDA0LDU3NCBMNDAyLDU3NCBMNDAyLDU3MyBMMzk2LDU3MyBMMzk2LDU3NCBMMzkxLDU3NSBMMzkxLDU3NiBMMzg1LDU4MSBMMzg1LDU4MyBMMzg0LDU4MyBMMzg0LDU4NiBMMzgzLDU4NiBMMzgzLDU4OSBMMzgyLDU4OSBMMzgyLDU5MiBMMzgxLDU5MiBMMzgxLDU5OCBMMzgwLDU5OCBMMzgwLDYxNiBMMzgxLDYxNiBMMzgyLDYyNSBMMzgzLDYyNSBMMzg1LDYzMSBMMzg2LDYzMSBMMzg3LDYzMyBMMzg5LDYzMyBMMzkwLDYzNSBMMzkzLDYzNSBMMzkzLDYzNiBMNDAwLDYzNiBMNDAwLDYzNSBMNDA0LDYzNCBMNDA0LDYzMiBMNDA2LDYzMSBMNDA2LDYyOCBMNDA3LDYyOCBMNDA3LDYyNCBMMzk0LDYyNCBMMzk0LDYyMyBMMzkyLDYyMiBMMzkyLDU5NSBMMzkzLDU5NSBMMzk0LDU5MiBMNDU5LDU5MiBMNDU5LDU5MyBMNDYxLDU5NCBMNDYxLDU5NyBMNDYyLDU5NyBMNDYyLDYyOCBMNDYxLDY4NSBMNDYwLDY4NSBMNDU5LDY4NyBMNDU3LDY4NyBMNDU3LDY4OCBMNDI4LDY4OCBMNDI4LDY4NyBMNDI2LDY4NiBMNDI2LDY4NCBMNDI1LDY4NCBMNDI0LDY3NiBMNDIyLDY3NiBMNDIyLDY3NyBMNDIxLDY3NyBMNDE4LDY4MSBMNDE2LDY4MSBMNDE1LDY4MyBMNDEzLDY4MyBMNDEzLDY4NCBMNDExLDY4NCBMNDExLDY4NSBMNDA5LDY4NSBMNDA5LDY4NiBMNDAzLDY4NyBMNDAzLDY4OCBMMzk3LDY4OCBMMzk3LDY4OSBMMzcwLDY4OSBMMzcwLDY4OCBMMzY0LDY4OCBMMzY0LDY4NyBMMzYwLDY4NyBMMzYwLDY4NiBMMzU3LDY4NiBMMzU3LDY4NSBMMzU0LDY4NSBMMzU0LDY4NCBMMzUyLDY4NCBMMzUyLDY4MyBMMzQ5LDY4MyBMMzQ5LDY4MiBMMzQ1LDY4MSBMMzQ0LDY3OSBMMzQyLDY3OSBMMzQxLDY3NyBMMzM5LDY3NyBMMzM1LDY3MiBMMzMzLDY3MiBMMzMyLDY2OSBMMzI3LDY2NSBMMzI3LDY2MyBMMzI1LDY2MiBMMzI0LDY1OCBMMzIyLDY1NyBMMzIyLDY1NSBMMzIxLDY1NSBMMzIxLDY1MyBMMzIwLDY1MyBMMzIwLDY1MCBMMzE5LDY1MCBMMzE4LDY0NSBMMzE3LDY0NSBMMzE3LDY0MiBMMzE2LDY0MiBMMzE2LDYzOCBMMzE1LDYzOCBMMzE1LDYzNCBMMzE0LDYzNCBMMzE0LDYyOSBMMzEzLDYyOSBMMzEzLDYxOSBMMzEyLDYxOSBMMzEyLDYwNCBMMzEzLDYwNCBMMzE0LDU4OSBMMzE1LDU4OSBMMzE2LDU4MCBMMzE3LDU4MCBMMzE3LDU3NyBMMzE4LDU3NyBMMzE5LDU3MSBMMzIwLDU3MSBMMzIwLDU2OSBMMzIxLDU2OSBMMzIxLDU2NiBMMzIyLDU2NiBMMzI0LDU2MCBMMzI2LDU1OSBMMzI3LDU1NSBMMzI5LDU1NCBMMzI5LDU1MiBMMzMyLDU1MCBMMzMyLDU0OCBMMzMzLDU0OCBMMzMzLDU0NyBMMzM0LDU0NyBMMzM0LDU0NiBMMzM1LDU0NiBMMzQwLDU0MCBMMzQyLDU0MCBMMzQ0LDUzNyBMMzQ2LDUzNyBMMzQ2LDUzNiBMMzQ5LDUzNSBMMzUwLDUzMyBMMzUyLDUzMyBMMzUyLDUzMiBMMzU0LDUzMiBMMzU0LDUzMSBMMzU2LDUzMSBMMzU2LDUzMCBMMzU4LDUzMCBMMzU4LDUyOSBMMzYxLDUyOSBMMzYxLDUyOCBMMzYzLDUyOCBMMzYzLDUyNyBMMzY3LDUyNyBMMzY3LDUyNiBMMzc1LDUyNSBMMzc1LDUyNCBMMzgwLDUyNCBMMzgwLDUyMyBMMzg4LDUyMyBMMzg4LDUyMiBaIE05OTgsNTIyIEwxMDIxLDUyMiBMMTAyMSw1MjMgTDEwMjksNTIzIEwxMDI5LDUyNCBMMTAzNyw1MjUgTDEwMzcsNTI2IEwxMDQwLDUyNiBMMTA0MCw1MjcgTDEwNDIsNTI3IEwxMDQyLDUyOCBMMTA0Nyw1MjkgTDEwNDcsNTMwIEwxMDUwLDUzMSBMMTA1MCw1MzIgTDEwNTEsNTMyIEwxMDUxLDUzMyBMMTA1Miw1MzMgTDEwNTIsNTM0IEwxMDU4LDUzOSBMMTA1OCw1NDEgTDEwNjAsNTQyIEwxMDYxLDU0NyBMMTA2Miw1NDcgTDEwNjIsNTUwIEwxMDYzLDU1MCBMMTA2Myw1NTQgTDEwNjQsNTU0IEwxMDY0LDU2MSBMMTA2NSw1NjEgTDEwNjUsNTg4IEwxMDY0LDU4OCBMMTA2NCw1OTAgTDEwNjEsNTkxIEwxMDYxLDU5MiBMMTAzNSw1OTMgTDEwMzUsNTk0IEwxMDIyLDU5NCBMMTAyMiw1OTUgTDEwMTksNTk1IEwxMDE5LDU5NCBMMTAxNyw1OTQgTDEwMTcsNTkzIEwxMDE1LDU5MiBMMTAxNSw1ODIgTDEwMTQsNTgyIEwxMDE0LDU3OCBMMTAxMyw1NzggTDEwMTMsNTc2IEwxMDEyLDU3NiBMMTAxMSw1NzQgTDEwMDksNTc0IEwxMDA5LDU3MyBMMTAwOCw1NzMgTDEwMDgsNTc0IEwxMDA1LDU3NCBMMTAwNSw1NzUgTDEwMDMsNTc2IEwxMDAyLDU4MSBMMTAwMSw1ODEgTDEwMDEsNTg1IEwxMDAwLDU4NSBMMTAwMCw2MjQgTDEwMDEsNjI0IEwxMDAxLDYyOSBMMTAwMiw2MjkgTDEwMDMsNjM0IEwxMDA0LDYzNCBMMTAwNSw2MzYgTDEwMDcsNjM2IEwxMDA3LDYzNyBMMTAxMCw2MzcgTDEwMTAsNjM2IEwxMDEzLDYzNSBMMTAxNCw2MzAgTDEwMTUsNjMwIEwxMDE2LDYxOSBMMTAxNyw2MTkgTDEwMTcsNjE3IEwxMDE5LDYxNyBMMTAxOSw2MTYgTDEwNjEsNjE5IEwxMDYxLDYyMCBMMTA2Myw2MjAgTDEwNjQsNjIzIEwxMDY1LDYyMyBMMTA2NSw2NDIgTDEwNjUsNjQ5IEwxMDY0LDY0OSBMMTA2Myw2NjAgTDEwNjIsNjYwIEwxMDYxLDY2NiBMMTA2MCw2NjYgTDEwNTksNjcwIEwxMDU3LDY3MSBMMTA1Nyw2NzMgTDEwNTYsNjczIEwxMDU2LDY3NCBMMTA1NSw2NzQgTDEwNTUsNjc1IEwxMDU0LDY3NSBMMTA0OSw2ODEgTDEwNDcsNjgxIEwxMDQ2LDY4MyBMMTA0NCw2ODMgTDEwNDQsNjg0IEwxMDQyLDY4NCBMMTA0Miw2ODUgTDEwNDAsNjg1IEwxMDQwLDY4NiBMMTAzNCw2ODcgTDEwMzQsNjg4IEwxMDMwLDY4OCBMMTAzMCw2ODkgTDEwMjQsNjg5IEwxMDI0LDY5MCBMOTk0LDY5MCBMOTk0LDY4OSBMOTg3LDY4OSBMOTg3LDY4OCBMOTc5LDY4NyBMOTc5LDY4NiBMOTc0LDY4NSBMOTc0LDY4NCBMOTcyLDY4NCBMOTcyLDY4MyBMOTY2LDY4MSBMOTY1LDY3OSBMOTYzLDY3OSBMOTYzLDY3OCBMOTYyLDY3OCBMOTYyLDY3NyBMOTYxLDY3NyBMOTYxLDY3NiBMOTYwLDY3NiBMOTYwLDY3NSBMOTU5LDY3NSBMOTU5LDY3NCBMOTUzLDY2OSBMOTUzLDY2NyBMOTUxLDY2NiBMOTUxLDY2NCBMOTUwLDY2NCBMOTUwLDY2MiBMOTQ5LDY2MiBMOTQ5LDY2MCBMOTQ4LDY2MCBMOTQ4LDY1OCBMOTQ3LDY1OCBMOTQ3LDY1NiBMOTQ2LDY1NiBMOTQ2LDY1MyBMOTQ1LDY1MyBMOTQ1LDY1MSBMOTQ0LDY1MSBMOTQ0LDY0NyBMOTQzLDY0NyBMOTQzLDY0MyBMOTQyLDY0MyBMOTQyLDYzOSBMOTQxLDYzOSBMOTQxLDYzMyBMOTQwLDYzMyBMOTM5LDYxNiBMOTM4LDYxNiBMOTM4LDU5MiBMOTM5LDU5MiBMOTM5LDU4MiBMOTQwLDU4MiBMOTQwLDU3NiBMOTQxLDU3NiBMOTQxLDU3MSBMOTQyLDU3MSBMOTQzLDU2MyBMOTQ0LDU2MyBMOTQ1LDU1NyBMOTQ2LDU1NyBMOTQ2LDU1NSBMOTQ3LDU1NSBMOTQ5LDU0OSBMOTUxLDU0OCBMOTUxLDU0NiBMOTUzLDU0NSBMOTUzLDU0MyBMOTU0LDU0MyBMOTU0LDU0MiBMOTU1LDU0MiBMOTU1LDU0MSBMOTU2LDU0MSBMOTYxLDUzNSBMOTYzLDUzNSBMOTYzLDUzNCBMOTY2LDUzMyBMOTY3LDUzMSBMOTY5LDUzMSBMOTY5LDUzMCBMOTcxLDUzMCBMOTcxLDUyOSBMOTczLDUyOSBMOTczLDUyOCBMOTc2LDUyOCBMOTc2LDUyNyBMOTc4LDUyNyBMOTc4LDUyNiBMOTg1LDUyNSBMOTg1LDUyNCBMOTkwLDUyNCBMOTkwLDUyMyBMOTk4LDUyMyBMOTk4LDUyMiBaIE00NzQsNTI0IEw1NzMsNTI0IEw1NzMsNTI1IEw1NzUsNTI1IEw1NzUsNTI2IEw1NzcsNTI3IEw1NzcsNTI5IEw1NzgsNTI5IEw1NzgsNTczIEw1NzcsNTczIEw1NzUsNTc2IEw1MzUsNTc2IEw1MzUsNTg0IEw1NzEsNTg0IEw1NzEsNTg1IEw1NzMsNTg2IEw1NzMsNTg4IEw1NzQsNTg4IEw1NzQsNjIxIEw1NzMsNjIxIEw1NzIsNjI0IEw1NzAsNjI0IEw1NzAsNjI1IEw1MzUsNjI1IEw1MzUsNjMzIEw1NjIsNjMzIEw1NzgsNjMzIEw1NzgsNjM0IEw1ODAsNjM0IEw1ODAsNjM1IEw1ODIsNjM2IEw1ODIsNjM5IEw1ODMsNjM5IEw1ODMsNjgzIEw1ODIsNjgzIEw1ODIsNjg2IEw1ODEsNjg2IEw1ODEsNjg3IEw1NzksNjg3IEw1NzksNjg4IEw0NzIsNjg4IEw0NzIsNjg3IEw0NzAsNjg3IEw0NzAsNjg1IEw0NjksNjg1IEw0NjksNjc3IEw0NjgsNjc3IEw0NjgsNTMzIEw0NjksNTMzIEw0NjksNTI3IEw0NzAsNTI3IEw0NzEsNTI1IEw0NzQsNTI1IEw0NzQsNTI0IFogTTU4Nyw1MjQgTDY5Miw1MjQgTDY5Miw1MjUgTDY5NSw1MjUgTDY5NSw1MjYgTDY5Niw1MjYgTDY5Niw1MjggTDY5Nyw1MjggTDY5Nyw1NzggTDY5Niw1NzggTDY5NCw1ODEgTDY3MCw1ODEgTDY3MCw2NjUgTDY3MCw2ODQgTDY2OSw2ODQgTDY2OSw2ODYgTDY2Niw2ODcgTDY2Niw2ODggTDYwNiw2ODggTDYwNiw2ODcgTDYwNCw2ODYgTDYwNCw2ODQgTDYwMyw2ODQgTDYwMyw1ODEgTDU4Niw1ODEgTDU4Niw1ODAgTDU4NCw1ODAgTDU4NCw1NzggTDU4Myw1NzggTDU4Myw1MjggTDU4NCw1MjggTDU4NCw1MjYgTDU4Nyw1MjUgTDU4Nyw1MjQgWiBNNzM1LDUyNCBMODA5LDUyNCBMODA5LDUyNSBMODI2LDUyNiBMODI2LDUyNyBMODM0LDUyOCBMODM0LDUyOSBMODM5LDUzMCBMODM5LDUzMSBMODQzLDUzMiBMODQ0LDUzNCBMODQ2LDUzNCBMODQ4LDUzNyBMODUwLDUzNyBMODUwLDUzOCBMODU0LDU0MSBMODU0LDU0MyBMODU2LDU0NCBMODU3LDU0OCBMODU5LDU0OSBMODU5LDU1MiBMODYwLDU1MiBMODYwLDU1NCBMODYxLDU1NCBMODYxLDU1OCBMODYyLDU1OCBMODYyLDU2MyBMODYzLDU2MyBMODYzLDU4NSBMODYyLDU4NSBMODYxLDU5NCBMODYwLDU5NCBMODYwLDU5NiBMODU5LDU5NiBMODU5LDU5OSBMODU4LDU5OSBMODU3LDYwMyBMODU2LDYwMyBMODU1LDYwNiBMODUzLDYwNyBMODUzLDYwOSBMODUyLDYwOSBMODQ4LDYxNCBMODQ2LDYxNCBMODQ0LDYxNyBMODM4LDYxOSBMODM4LDYyMyBMODM5LDYyMyBMODM5LDYyNSBMODQwLDYyNSBMODQwLDYyNyBMODQxLDYyNyBMODQxLDYyOSBMODQyLDYyOSBMODQyLDYzMSBMODQzLDYzMSBMODQzLDYzMyBMODQ0LDYzMyBMODQ0LDYzNSBMODQ1LDYzNSBMODQ1LDYzNyBMODQ2LDYzNyBMODQ2LDYzOSBMODQ3LDYzOSBMODQ3LDY0MSBMODQ4LDY0MSBMODQ4LDY0NCBMODQ5LDY0NCBMODQ5LDY0NiBMODUwLDY0NiBMODUwLDY0OCBMODUxLDY0OCBMODUxLDY1MCBMODUyLDY1MCBMODUyLDY1MiBMODUzLDY1MiBMODUzLDY1NCBMODU0LDY1NCBMODU0LDY1NiBMODU1LDY1NiBMODU1LDY1OSBMODU2LDY1OSBMODU2LDY2MSBMODU3LDY2MSBMODU3LDY2MyBMODU4LDY2MyBMODU4LDY2NSBMODU5LDY2NSBMODU5LDY2NyBMODYwLDY2NyBMODYwLDY2OSBMODYxLDY2OSBMODYxLDY3MSBMODYyLDY3MSBMODYyLDY3MyBMODYzLDY3MyBMODYzLDY3NiBMODY0LDY3NiBMODY0LDY3OCBMODY1LDY3OCBMODY2LDY4NCBMODY1LDY4NCBMODY1LDY4NiBMODY0LDY4NiBMODYzLDY4OCBMODMwLDY4OCBMODA3LDY4OCBMODA3LDY4NyBMODA0LDY4NSBMODA0LDY4MiBMODAzLDY4MiBMODAzLDY3OSBMODAyLDY3OSBMODAyLDY3NiBMODAxLDY3NiBMODAxLDY3MiBMODAwLDY3MiBMODAwLDY2OSBMNzk5LDY2OSBMNzk5LDY2NiBMNzk4LDY2NiBMNzk4LDY2MyBMNzk3LDY2MyBMNzk3LDY2MCBMNzk2LDY2MCBMNzk2LDY1NyBMNzk1LDY1NyBMNzk1LDY1MyBMNzk0LDY1MyBMNzk0LDY1MCBMNzkzLDY1MCBMNzkzLDY0NyBMNzkyLDY0NyBMNzkxLDY0MSBMNzkwLDY0MSBMNzkwLDYzOSBMNzg5LDYzOSBMNzg5LDYzNiBMNzg3LDYzNiBMNzg3LDYzNyBMNzg4LDYzNyBMNzg4LDY0MSBMNzg3LDY0MSBMNzg3LDY0OCBMNzg4LDY0OCBMNzg3LDY3MiBMNzg4LDY3MiBMNzg4LDY3NiBMNzg3LDY3NiBMNzg3LDY4NSBMNzg2LDY4NSBMNzg2LDY4NyBMNzg0LDY4NyBMNzg0LDY4OCBMNzMzLDY4OCBMNzMzLDY4NyBMNzMwLDY4NiBMNzMwLDY4MyBMNzI5LDY4MyBMNzI5LDY2MiBMNzMwLDY2MiBMNzMwLDUyOCBMNzMxLDUyOCBMNzMyLDUyNSBMNzM1LDUyNSBMNzM1LDUyNCBaIE04NzQsNTI0IEw5MjgsNTI0IEw5MjgsNTI1IEw5MzAsNTI1IEw5MzAsNTI2IEw5MzIsNTI3IEw5MzIsNTI5IEw5MzMsNTI5IEw5MzMsNjg0IEw5MzIsNjg0IEw5MzEsNjg3IEw5MjgsNjg4IEw4NzQsNjg4IEw4NzQsNjg3IEw4NzIsNjg3IEw4NzIsNjg2IEw4NzAsNjg1IEw4NzAsNTQ4IEw4NjksNTQ4IEw4NjksNTMyIEw4NzAsNTMyIEw4NzAsNTI3IEw4NzEsNTI3IEw4NzIsNTI1IEw4NzQsNTI1IEw4NzQsNTI0IFogTTEwNzYsNTI0IEwxMTI3LDUyNCBMMTEyNyw1MjUgTDExMzAsNTI1IEwxMTMwLDUyNiBMMTEzMiw1MjcgTDExMzIsNTMwIEwxMTMzLDUzMCBMMTEzMyw1NzggTDExNTAsNTc4IEwxMTUwLDUzMCBMMTE1MSw1MzAgTDExNTEsNTI3IEwxMTUyLDUyNyBMMTE1Myw1MjUgTDExNTUsNTI1IEwxMTU1LDUyNCBMMTIxMCw1MjQgTDEyMTAsNTI1IEwxMjEzLDUyNSBMMTIxMyw1MjYgTDEyMTQsNTI2IEwxMjE0LDUyOCBMMTIxNSw1MjggTDEyMTUsNTczIEwxMjE2LDU3MyBMMTIxNiw2NDggTDEyMTcsNjQ4IEwxMjE3LDY4MyBMMTIxNiw2ODMgTDEyMTUsNjg3IEwxMjEzLDY4NyBMMTIxMyw2ODggTDEyMDksNjg4IEwxMTU1LDY4OCBMMTE1NSw2ODcgTDExNTMsNjg3IEwxMTUzLDY4NSBMMTE1Miw2ODUgTDExNTIsNjgzIEwxMTUxLDY4MyBMMTE1MSw2MzEgTDExMzMsNjMxIEwxMTMzLDY4NSBMMTEzMiw2ODUgTDExMzEsNjg3IEwxMTI5LDY4NyBMMTEyOSw2ODggTDEwNzUsNjg4IEwxMDc1LDY4NyBMMTA3Myw2ODcgTDEwNzMsNjg1IEwxMDcyLDY4NSBMMTA3Miw2ODMgTDEwNzEsNjgzIEwxMDcxLDUyOSBMMTA3Miw1MjkgTDEwNzIsNTI3IEwxMDczLDUyNyBMMTA3NCw1MjUgTDEwNzYsNTI1IEwxMDc2LDUyNCBaIE03ODksNTY1IEw3ODcsNTY2IEw3ODcsNTY3IEw3ODgsNTY3IEw3ODgsNTk1IEw3OTUsNTk1IEw3OTUsNTk0IEw3OTgsNTk0IEw3OTgsNTkzIEw4MDAsNTkyIEw4MDIsNTkxIEw4MDIsNTg5IEw4MDMsNTg5IEw4MDMsNTg3IEw4MDQsNTg3IEw4MDQsNTg0IEw4MDUsNTg0IEw4MDUsNTc0IEw4MDQsNTc0IEw4MDQsNTcxIEw4MDIsNTcwIEw4MDIsNTY4IEw4MDAsNTY4IEw4MDAsNTY3IEw3OTcsNTY2IEw3OTcsNTY1IEw3ODksNTY1IFoiLz48L2c+PC9zdmc+"><img class="logo logo-dark" alt="How to Get Rich" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjEzMCAzNDAgMTQ1MCAzNjAiIHJvbGU9ImltZyIgYXJpYS1sYWJlbD0iSG93IHRvIEdldCBSaWNoIj48dGl0bGU+SG93IHRvIEdldCBSaWNoPC90aXRsZT48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTYwLDM3MCkgc2NhbGUoLjcpIj48ZyBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGZpbGw9IiM0ZGEyZmYiIGQ9Ik00OTUgMzM5IEM0NjkgMzM5IDQ1MCAzMjIgNDUwIDI5OCBDNDUwIDI3NCA0NjkgMjUzIDQ5NSAyNTMgSDYzNyBDNjM5IDIxMSA2NTggMTg0IDY5NCAxODQgSDgzMSBDODM0IDE0NyA4NTMgMTI0IDg4OSAxMjQgSDEwMzggQzEwNjggMTI0IDEwODYgMTQ0IDEwODYgMTcyIEMxMDg2IDIwMSAxMDY3IDIxOCAxMDM4IDIxOCBIOTAyIEM5MDAgMjUxIDg4MyAyNjkgODU0IDI2OSBINzEyIEM3MTAgMzExIDY5MSAzMzkgNjYzIDMzOSBaIi8+PHBhdGggZmlsbD0iI2ZmZDczMSIgZD0iTTg2NyAxMjQgUTg1MiAxMjEgODYxIDEwNSBMODg1IDY1IFE4OTAgNTUgOTAzIDU1IEgxMDE3IFExMDI5IDU1IDEwMzQgNjcgTDEwNTAgMTA3IFExMDU1IDEyMCAxMDQwIDEyNCBaIi8+PC9nPjxwYXRoIGZpbGw9IiNkZGEwMTMiIGQ9Ik0xMDA2IDY3IEwxMDE5IDYzIEwxMDQwIDExMSBMMTAyNCAxMTYgWiIvPjwvZz48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgzNTAsMCkiPjxwYXRoIGZpbGw9IiNmZmYiIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTEwOTQsMzU2IEwxMTIwLDM1NiBMMTEyMCwzNTcgTDExMjgsMzU3IEwxMTI4LDM1OCBMMTEzNCwzNTggTDExMzQsMzU5IEwxMTQyLDM2MCBMMTE0MiwzNjEgTDExNDUsMzYxIEwxMTQ1LDM2MiBMMTE0NywzNjIgTDExNDcsMzYzIEwxMTUwLDM2MyBMMTE1MCwzNjQgTDExNTQsMzY1IEwxMTU1LDM2NyBMMTE1NywzNjcgTDExNTgsMzY5IEwxMTYwLDM2OSBMMTE2MiwzNzIgTDExNjQsMzcyIEwxMTY0LDM3MyBMMTE2NywzNzUgTDExNjcsMzc3IEwxMTcxLDM4MCBMMTE3MSwzODIgTDExNzIsMzgyIEwxMTcyLDM4NCBMMTE3NCwzODUgTDExNzQsMzg3IEwxMTc1LDM4NyBMMTE3NSwzODkgTDExNzYsMzg5IEwxMTc2LDM5MSBMMTE3NywzOTEgTDExNzcsMzk0IEwxMTc4LDM5NCBMMTE3OCwzOTYgTDExNzksMzk2IEwxMTc5LDM5OSBMMTE4MCwzOTkgTDExODAsNDAyIEwxMTgxLDQwMiBMMTE4MSw0MDYgTDExODIsNDA2IEwxMTgyLDQxMSBMMTE4Myw0MTEgTDExODQsNDI3IEwxMTg1LDQyNyBMMTE4NCw0NTMgTDExODMsNDUzIEwxMTgzLDQ1OSBMMTE4Miw0NTkgTDExODEsNDY4IEwxMTgwLDQ2OCBMMTE3OSw0NzQgTDExNzgsNDc0IEwxMTc4LDQ3NiBMMTE3Nyw0NzYgTDExNzcsNDc5IEwxMTc2LDQ3OSBMMTE3NCw0ODUgTDExNzIsNDg2IEwxMTcyLDQ4OCBMMTE3MCw0ODkgTDExNzAsNDkxIEwxMTY1LDQ5NSBMMTE2NSw0OTcgTDExNjMsNDk3IEwxMTU5LDUwMiBMMTE1Nyw1MDIgTDExNTcsNTAzIEwxMTU0LDUwNCBMMTE1Myw1MDYgTDExNTEsNTA2IEwxMTUxLDUwNyBMMTE0OSw1MDcgTDExNDksNTA4IEwxMTQ2LDUwOCBMMTE0Niw1MDkgTDExNDQsNTA5IEwxMTQ0LDUxMCBMMTE0Miw1MTAgTDExNDIsNTExIEwxMTM4LDUxMSBMMTEzOCw1MTIgTDExMzQsNTEyIEwxMTM0LDUxMyBMMTEyOSw1MTMgTDExMjksNTE0IEwxMTIyLDUxNCBMMTEyMiw1MTUgTDExMjEsNTE1IEwxMDkwLDUxNSBMMTA5MCw1MTQgTDEwODMsNTE0IEwxMDgzLDUxMyBMMTA3NCw1MTIgTDEwNzQsNTExIEwxMDcxLDUxMSBMMTA3MSw1MTAgTDEwNjgsNTEwIEwxMDY4LDUwOSBMMTA2NSw1MDkgTDEwNjUsNTA4IEwxMDU5LDUwNiBMMTA1OSw1MDUgTDEwNTYsNTA0IEwxMDUzLDUwMCBMMTA1MSw1MDAgTDEwNTEsNDk5IEwxMDQ2LDQ5NSBMMTA0Niw0OTMgTDEwNDMsNDkxIEwxMDQzLDQ4OSBMMTA0MSw0ODggTDEwNDEsNDg2IEwxMDQwLDQ4NiBMMTA0MCw0ODQgTDEwMzksNDg0IEwxMDM5LDQ4MiBMMTAzOCw0ODIgTDEwMzgsNDgwIEwxMDM3LDQ4MCBMMTAzNyw0NzggTDEwMzYsNDc4IEwxMDM2LDQ3NSBMMTAzNSw0NzUgTDEwMzUsNDcyIEwxMDM0LDQ3MiBMMTAzNCw0NjkgTDEwMzMsNDY5IEwxMDMzLDQ2NSBMMTAzMiw0NjUgTDEwMzIsNDYwIEwxMDMxLDQ2MCBMMTAzMSw0NTMgTDEwMzAsNDUzIEwxMDMwLDQyNCBMMTAzMSw0MjQgTDEwMzEsNDE2IEwxMDMyLDQxNiBMMTAzMiw0MTEgTDEwMzMsNDExIEwxMDMzLDQwNyBMMTAzNCw0MDcgTDEwMzQsNDA0IEwxMDM1LDQwNCBMMTAzNSw0MDEgTDEwMzYsNDAxIEwxMDM3LDM5NSBMMTAzOCwzOTUgTDEwMzksMzkwIEwxMDQwLDM5MCBMMTA0MSwzODYgTDEwNDMsMzg1IEwxMDQ0LDM4MSBMMTA0NSwzODEgTDEwNDUsMzgwIEwxMDQ2LDM4MCBMMTA0NiwzNzkgTDEwNDcsMzc5IEwxMDQ3LDM3OCBMMTA0OCwzNzggTDEwNDgsMzc3IEwxMDQ5LDM3NyBMMTA0OSwzNzYgTDEwNTAsMzc2IEwxMDUwLDM3NSBMMTA1MSwzNzUgTDEwNTYsMzY5IEwxMDU4LDM2OSBMMTA1OSwzNjcgTDEwNjMsMzY2IEwxMDY0LDM2NCBMMTA2OSwzNjMgTDEwNjksMzYyIEwxMDc0LDM2MSBMMTA3NCwzNjAgTDEwNzcsMzYwIEwxMDc3LDM1OSBMMTA4NiwzNTggTDEwODYsMzU3IEwxMDk0LDM1NyBMMTA5NCwzNTYgWiBNNTcwLDM1NyBMNjAxLDM1NyBMNjAxLDM1OCBMNjA3LDM1OCBMNjA3LDM1OSBMNjE2LDM2MCBMNjE2LDM2MSBMNjIyLDM2MiBMNjIyLDM2MyBMNjI0LDM2MyBMNjI0LDM2NCBMNjMwLDM2NiBMNjMwLDM2NyBMNjMzLDM2OCBMNjM2LDM3MiBMNjM4LDM3MiBMNjM4LDM3NCBMNjM5LDM3NCBMNjM5LDM3NSBMNjQzLDM3OCBMNjQzLDM4MCBMNjQ1LDM4MSBMNjQ1LDM4MyBMNjQ2LDM4MyBMNjQ2LDM4NSBMNjQ3LDM4NSBMNjQ3LDM4NyBMNjQ4LDM4NyBMNjQ4LDM4OSBMNjQ5LDM4OSBMNjQ5LDM5MiBMNjUwLDM5MiBMNjUwLDM5NCBMNjUxLDM5NCBMNjUyLDQwMSBMNjUzLDQwMSBMNjUzLDQwNSBMNjU0LDQwNSBMNjU1LDQxOSBMNjU2LDQxOSBMNjU2LDQ1MSBMNjU1LDQ1MSBMNjU1LDQ1OSBMNjU0LDQ1OSBMNjU0LDQ2NSBMNjUzLDQ2NSBMNjUyLDQ3MyBMNjUxLDQ3MyBMNjUwLDQ3OSBMNjQ5LDQ3OSBMNjQ5LDQ4MSBMNjQ4LDQ4MSBMNjQ4LDQ4MyBMNjQ3LDQ4MyBMNjQ1LDQ4OSBMNjQzLDQ5MCBMNjQzLDQ5MiBMNjQxLDQ5MyBMNjQxLDQ5NSBMNjQwLDQ5NSBMNjQwLDQ5NiBMNjM5LDQ5NiBMNjM0LDUwMiBMNjMyLDUwMiBMNjMwLDUwNSBMNjI0LDUwNyBMNjIzLDUwOSBMNjIwLDUwOSBMNjIwLDUxMCBMNjE1LDUxMSBMNjE1LDUxMiBMNjA3LDUxMyBMNjA3LDUxNCBMNTk3LDUxNSBMNTg4LDUxNSBMNTg4LDUxNiBMNTY1LDUxNSBMNTY1LDUxNCBMNTU5LDUxNCBMNTU5LDUxMyBMNTUxLDUxMiBMNTUxLDUxMSBMNTQ5LDUxMSBMNTQ5LDUxMCBMNTQ2LDUxMCBMNTQ2LDUwOSBMNTQ0LDUwOSBMNTQ0LDUwOCBMNTQyLDUwOCBMNTQyLDUwNyBMNTM2LDUwNSBMNTM0LDUwMiBMNTMyLDUwMiBMNTMyLDUwMSBMNTI4LDQ5OCBMNTI4LDQ5NiBMNTI3LDQ5NiBMNTI3LDQ5NSBMNTI1LDQ5NCBMNTI1LDQ5MiBMNTIzLDQ5MSBMNTIzLDQ4OSBMNTIyLDQ4OSBMNTIyLDQ4NyBMNTIxLDQ4NyBMNTIxLDQ4NSBMNTIwLDQ4NSBMNTIwLDQ4MyBMNTE5LDQ4MyBMNTE5LDQ4MCBMNTE4LDQ4MCBMNTE4LDQ3OCBMNTE3LDQ3OCBMNTE2LDQ3MSBMNTE1LDQ3MSBMNTE1LDQ2NiBMNTE0LDQ2NiBMNTE0LDQ2MSBMNTEzLDQ2MSBMNTEzLDQ1MSBMNTEyLDQ1MSBMNTEyLDQyOCBMNTEzLDQyOCBMNTEzLDQxOCBMNTE0LDQxOCBMNTE0LDQxMyBMNTE1LDQxMyBMNTE1LDQwOCBMNTE2LDQwOCBMNTE2LDQwNCBMNTE3LDQwNCBMNTE3LDQwMSBMNTE4LDQwMSBMNTE4LDM5NyBMNTE5LDM5NyBMNTE5LDM5NSBMNTIwLDM5NSBMNTIwLDM5MiBMNTIxLDM5MiBMNTIxLDM5MCBMNTIyLDM5MCBMNTI0LDM4NCBMNTI2LDM4MyBMNTI2LDM4MSBMNTI4LDM4MCBMNTI4LDM3OCBMNTI5LDM3OCBMNTI5LDM3NyBMNTMwLDM3NyBMNTMwLDM3NiBMNTMxLDM3NiBMNTM2LDM3MCBMNTM4LDM3MCBMNTQwLDM2NyBMNTQyLDM2NyBMNTQyLDM2NiBMNTQ0LDM2NiBMNTQ0LDM2NSBMNTQ2LDM2NSBMNTQ2LDM2NCBMNTQ4LDM2NCBMNTQ4LDM2MyBMNTUwLDM2MyBMNTUwLDM2MiBMNTUzLDM2MiBMNTUzLDM2MSBMNTU2LDM2MSBMNTU2LDM2MCBMNTYwLDM2MCBMNTYwLDM1OSBMNTY0LDM1OSBMNTY0LDM1OCBMNTcwLDM1OCBMNTcwLDM1NyBaIE05MTEsMzU4IEwxMDI1LDM1OCBMMTAyNSwzNTkgTDEwMjcsMzU5IEwxMDI3LDM2MCBMMTAyOSwzNjEgTDEwMjksMzYzIEwxMDMwLDM2MyBMMTAzMCw0MDkgTDEwMjksNDA5IEwxMDI5LDQxMSBMMTAyOCw0MTEgTDEwMjcsNDEzIEwxMDAxLDQxMyBMMTAwMSw0ODggTDEwMDEsNTA5IEwxMDAwLDUwOSBMMTAwMCw1MTEgTDk5OCw1MTEgTDk5OCw1MTIgTDk5Niw1MTIgTDk5Niw1MTMgTDkzNyw1MTMgTDkzNyw1MTIgTDkzMyw1MTEgTDkzMyw1MDkgTDkzMiw1MDkgTDkzMiw0MTMgTDkxMCw0MTMgTDkxMCw0MTIgTDkwNyw0MTAgTDkwNywzNjIgTDkwOCwzNjIgTDkwOCwzNjAgTDkxMSwzNTkgTDkxMSwzNTggWiBNMzUzLDM1OSBMNDEzLDM1OSBMNDEzLDM2MCBMNDE1LDM2MSBMNDE1LDM2MyBMNDE2LDM2MyBMNDE2LDQwOSBMNDM2LDQwOSBMNDM2LDQwOCBMNDM3LDQwOCBMNDM3LDM2MyBMNDM4LDM2MyBMNDM4LDM2MSBMNDM5LDM2MSBMNDQwLDM1OSBMNTAzLDM1OSBMNTAzLDM2MCBMNTA1LDM2MCBMNTA1LDM2MiBMNTA2LDM2MiBMNTA2LDUwOSBMNTA1LDUwOSBMNTAzLDUxMiBMNDk3LDUxMiBMNDQxLDUxMiBMNDQxLDUxMSBMNDM5LDUxMSBMNDM4LDUwOCBMNDM3LDUwOCBMNDM3LDQ1NyBMNDE2LDQ1NyBMNDE2LDUwOCBMNDE1LDUwOCBMNDE0LDUxMSBMNDEyLDUxMSBMNDEyLDUxMiBMMzUzLDUxMiBMMzUzLDUxMSBMMzUwLDUxMCBMMzUwLDUwOCBMMzQ5LDUwOCBMMzQ5LDM2MyBMMzUwLDM2MyBMMzUwLDM2MSBMMzUzLDM2MCBMMzUzLDM1OSBaIE02NTYsMzU5IEw3MTYsMzU5IEw3MTYsMzYwIEw3MTksMzYxIEw3MTksMzY1IEw3MjAsMzY1IEw3MjAsMzczIEw3MjEsMzczIEw3MjEsMzgwIEw3MjIsMzgwIEw3MjIsMzg3IEw3MjMsMzg3IEw3MjMsMzk1IEw3MjQsMzk1IEw3MjQsNDAyIEw3MjUsNDAyIEw3MjUsNDEwIEw3MjYsNDEwIEw3MjYsNDE3IEw3MjcsNDE3IEw3MjcsNDI0IEw3MjgsNDI0IEw3MjgsNDMxIEw3MjksNDMxIEw3MjksNDM4IEw3MzAsNDM4IEw3MzAsNDQwIEw3MzEsNDQwIEw3MzEsNDMzIEw3MzIsNDMzIEw3MzIsNDI2IEw3MzMsNDI2IEw3MzMsNDE4IEw3MzQsNDE4IEw3MzQsNDExIEw3MzUsNDExIEw3MzUsNDAzIEw3MzYsNDAzIEw3MzYsMzk1IEw3MzcsMzk1IEw3MzcsMzg4IEw3MzgsMzg4IEw3MzgsMzgwIEw3MzksMzgwIEw3NDAsMzY2IEw3NDEsMzY2IEw3NDEsMzYyIEw3NDIsMzYyIEw3NDIsMzYwIEw3NDQsMzYwIEw3NDQsMzU5IEw3OTAsMzU5IEw3OTAsMzYwIEw3OTIsMzYxIEw3OTIsMzY0IEw3OTMsMzY0IEw3OTMsMzc0IEw3OTQsMzc0IEw3OTQsMzgzIEw3OTUsMzgzIEw3OTUsMzkzIEw3OTYsMzkzIEw3OTYsNDAzIEw3OTcsNDAzIEw3OTcsNDEzIEw3OTgsNDEzIEw3OTgsNDI0IEw3OTksNDI0IEw3OTksNDM0IEw4MDAsNDM0IEw4MDAsNDM5IEw4MDEsNDM5IEw4MDIsNDI4IEw4MDMsNDI4IEw4MDMsNDIzIEw4MDQsNDIzIEw4MDQsNDE3IEw4MDUsNDE3IEw4MDUsNDExIEw4MDYsNDExIEw4MDYsNDA1IEw4MDcsNDA1IEw4MDcsMzk5IEw4MDgsMzk5IEw4MDgsMzkzIEw4MDksMzkzIEw4MDksMzg3IEw4MTAsMzg3IEw4MTAsMzgxIEw4MTEsMzgxIEw4MTEsMzc1IEw4MTIsMzc1IEw4MTMsMzYzIEw4MTQsMzYzIEw4MTQsMzYxIEw4MTUsMzYxIEw4MTYsMzU5IEw4NzYsMzU5IEw4NzYsMzYwIEw4NzgsMzYxIEw4NzgsMzcwIEw4NzcsMzcwIEw4NzcsMzc2IEw4NzYsMzc2IEw4NzYsMzgxIEw4NzUsMzgxIEw4NzUsMzg2IEw4NzQsMzg2IEw4NzQsMzkxIEw4NzMsMzkxIEw4NzMsMzk2IEw4NzIsMzk2IEw4NzIsNDAxIEw4NzEsNDAxIEw4NzEsNDA2IEw4NzAsNDA2IEw4NzAsNDA3IEw4NjksNDE2IEw4NjgsNDE2IEw4NjgsNDIyIEw4NjcsNDIyIEw4NjcsNDI2IEw4NjYsNDI2IEw4NjYsNDMyIEw4NjUsNDMyIEw4NjUsNDM3IEw4NjQsNDM3IEw4NjQsNDQyIEw4NjMsNDQyIEw4NjMsNDQ3IEw4NjIsNDQ3IEw4NjIsNDUyIEw4NjEsNDUyIEw4NjEsNDU4IEw4NjAsNDU4IEw4NTksNDY4IEw4NTgsNDY4IEw4NTcsNDc3IEw4NTYsNDc3IEw4NTYsNDgyIEw4NTUsNDgyIEw4NTUsNDg3IEw4NTQsNDg3IEw4NTQsNDkyIEw4NTMsNDkyIEw4NTIsNTAzIEw4NTEsNTAzIEw4NTEsNTA3IEw4NTAsNTA3IEw4NTAsNTA5IEw4NDksNTA5IEw4NDcsNTEyIEw3ODAsNTEyIEw3ODAsNTExIEw3NzcsNTA5IEw3NzcsNTA3IEw3NzYsNTA3IEw3NzUsNDk2IEw3NzQsNDk2IEw3NzQsNDkxIEw3NzMsNDkxIEw3NzMsNDg2IEw3NzIsNDg2IEw3NzEsNDc1IEw3NzAsNDc1IEw3NzAsNDcwIEw3NjksNDcwIEw3NjksNDY1IEw3NjgsNDY1IEw3NjgsNDYwIEw3NjcsNDYwIEw3NjYsNDUxIEw3NjUsNDUxIEw3NjUsNDU0IEw3NjQsNDU0IEw3NjQsNDU4IEw3NjMsNDU4IEw3NjMsNDYyIEw3NjIsNDYyIEw3NjIsNDY2IEw3NjEsNDY2IEw3NjEsNDcwIEw3NjAsNDcwIEw3NjAsNDc0IEw3NTksNDc0IEw3NTksNDc5IEw3NTgsNDc5IEw3NTgsNDgzIEw3NTcsNDgzIEw3NTcsNDg4IEw3NTYsNDg4IEw3NTYsNDkyIEw3NTUsNDkyIEw3NTUsNDk2IEw3NTQsNDk2IEw3NTQsNTAxIEw3NTMsNTAxIEw3NTIsNTA5IEw3NTEsNTA5IEw3NTAsNTExIEw3NDgsNTExIEw3NDgsNTEyIEw2ODIsNTEyIEw2ODIsNTExIEw2NzgsNTA4IEw2NzcsNDk2IEw2NzYsNDk2IEw2NzYsNDkxIEw2NzUsNDkxIEw2NzUsNDg2IEw2NzQsNDg2IEw2NzQsNDgwIEw2NzMsNDgwIEw2NzIsNDY5IEw2NzEsNDY5IEw2NzEsNDY0IEw2NzAsNDY0IEw2NzAsNDU4IEw2NjksNDU4IEw2NjksNDUzIEw2NjgsNDUzIEw2NjgsNDQ4IEw2NjcsNDQ4IEw2NjcsNDQyIEw2NjYsNDQyIEw2NjYsNDM2IEw2NjUsNDM2IEw2NjUsNDMxIEw2NjQsNDMxIEw2NjMsNDE5IEw2NjIsNDE5IEw2NjIsNDE0IEw2NjEsNDE0IEw2NjEsNDA5IEw2NjAsNDA5IEw2NjAsNDAzIEw2NTksNDAzIEw2NTksMzk3IEw2NTgsMzk3IEw2NTgsMzkyIEw2NTcsMzkyIEw2NTYsMzc5IEw2NTUsMzc5IEw2NTQsMzY4IEw2NTMsMzY4IEw2NTMsMzYyIEw2NTQsMzYyIEw2NTYsMzU5IFogTTU4Myw0MDcgTDU3OCw0MTEgTDU3OCw0MTQgTDU3Nyw0MTQgTDU3Nyw0MTcgTDU3Niw0MTcgTDU3Niw0MjIgTDU3NSw0MjIgTDU3NSw0NDkgTDU3Niw0NDkgTDU3Niw0NTUgTDU3Nyw0NTUgTDU3OCw0NjAgTDU3OSw0NjAgTDU4MSw0NjMgTDU4NSw0NjMgTDU4OSw0NjEgTDU4OSw0NTkgTDU5MCw0NTkgTDU5MCw0NTcgTDU5MSw0NTcgTDU5MSw0NTMgTDU5Miw0NTMgTDU5Myw0MjcgTDU5Miw0MjcgTDU5Miw0MTggTDU5MSw0MTggTDU5MCw0MTEgTDU4OSw0MTEgTDU4Niw0MDcgTDU4Myw0MDcgWiBNMTEwNCw0MDcgTDExMDMsNDA3IEwxMTAyLDQwOSBMMTEwMCw0MDkgTDExMDAsNDExIEwxMDk5LDQxMSBMMTA5OSw0MTMgTDEwOTgsNDEzIEwxMDk4LDQxNiBMMTA5Nyw0MTYgTDEwOTcsNDIxIEwxMDk2LDQyMSBMMTA5Niw0NDkgTDEwOTcsNDQ5IEwxMDk3LDQ1NCBMMTA5OCw0NTQgTDEwOTksNDU5IEwxMTAwLDQ1OSBMMTEwMiw0NjIgTDExMDcsNDYzIEwxMTA3LDQ2MiBMMTEwOSw0NjIgTDExMDksNDYxIEwxMTExLDQ2MCBMMTExMiw0NTUgTDExMTMsNDU1IEwxMTEzLDQ1MCBMMTExNCw0NTAgTDExMTQsNDQwIEwxMTE1LDQ0MCBMMTExNSw0MzAgTDExMTQsNDMwIEwxMTE0LDQxOSBMMTExMyw0MTkgTDExMTIsNDEyIEwxMTExLDQxMiBMMTExMSw0MTAgTDExMTAsNDEwIEwxMTA5LDQwOCBMMTEwNCw0MDcgWiBNMzg4LDUyMiBMNDE0LDUyMiBMNDE0LDUyMyBMNDIzLDUyMyBMNDIzLDUyNCBMNDMzLDUyNSBMNDMzLDUyNiBMNDM2LDUyNiBMNDM2LDUyNyBMNDQyLDUyOCBMNDQyLDUyOSBMNDQ2LDUzMCBMNDQ3LDUzMiBMNDQ5LDUzMiBMNDQ5LDUzMyBMNDU0LDUzNyBMNDU0LDUzOSBMNDU1LDUzOSBMNDU1LDU0MSBMNDU2LDU0MSBMNDU2LDU0NSBMNDU3LDU0NSBMNDU3LDU0OSBMNDU4LDU0OSBMNDU4LDU2NyBMNDU5LDU2NyBMNDU5LDU3MCBMNDU4LDU3MCBMNDU4LDU3OCBMNDU3LDU3OCBMNDU2LDU4MCBMNDUwLDU4MCBMNDUwLDU4MSBMNDM3LDU4MSBMNDM3LDU4MiBMNDI1LDU4MiBMNDI1LDU4MyBMNDE1LDU4MyBMNDE1LDU4NCBMNDExLDU4NCBMNDExLDU4MyBMNDA5LDU4MyBMNDA5LDU4MiBMNDA4LDU4MiBMNDA4LDU3OSBMNDA3LDU3OSBMNDA3LDU3NyBMNDA2LDU3NyBMNDA2LDU3NSBMNDA0LDU3NSBMNDA0LDU3NCBMNDAyLDU3NCBMNDAyLDU3MyBMMzk2LDU3MyBMMzk2LDU3NCBMMzkxLDU3NSBMMzkxLDU3NiBMMzg1LDU4MSBMMzg1LDU4MyBMMzg0LDU4MyBMMzg0LDU4NiBMMzgzLDU4NiBMMzgzLDU4OSBMMzgyLDU4OSBMMzgyLDU5MiBMMzgxLDU5MiBMMzgxLDU5OCBMMzgwLDU5OCBMMzgwLDYxNiBMMzgxLDYxNiBMMzgyLDYyNSBMMzgzLDYyNSBMMzg1LDYzMSBMMzg2LDYzMSBMMzg3LDYzMyBMMzg5LDYzMyBMMzkwLDYzNSBMMzkzLDYzNSBMMzkzLDYzNiBMNDAwLDYzNiBMNDAwLDYzNSBMNDA0LDYzNCBMNDA0LDYzMiBMNDA2LDYzMSBMNDA2LDYyOCBMNDA3LDYyOCBMNDA3LDYyNCBMMzk0LDYyNCBMMzk0LDYyMyBMMzkyLDYyMiBMMzkyLDU5NSBMMzkzLDU5NSBMMzk0LDU5MiBMNDU5LDU5MiBMNDU5LDU5MyBMNDYxLDU5NCBMNDYxLDU5NyBMNDYyLDU5NyBMNDYyLDYyOCBMNDYxLDY4NSBMNDYwLDY4NSBMNDU5LDY4NyBMNDU3LDY4NyBMNDU3LDY4OCBMNDI4LDY4OCBMNDI4LDY4NyBMNDI2LDY4NiBMNDI2LDY4NCBMNDI1LDY4NCBMNDI0LDY3NiBMNDIyLDY3NiBMNDIyLDY3NyBMNDIxLDY3NyBMNDE4LDY4MSBMNDE2LDY4MSBMNDE1LDY4MyBMNDEzLDY4MyBMNDEzLDY4NCBMNDExLDY4NCBMNDExLDY4NSBMNDA5LDY4NSBMNDA5LDY4NiBMNDAzLDY4NyBMNDAzLDY4OCBMMzk3LDY4OCBMMzk3LDY4OSBMMzcwLDY4OSBMMzcwLDY4OCBMMzY0LDY4OCBMMzY0LDY4NyBMMzYwLDY4NyBMMzYwLDY4NiBMMzU3LDY4NiBMMzU3LDY4NSBMMzU0LDY4NSBMMzU0LDY4NCBMMzUyLDY4NCBMMzUyLDY4MyBMMzQ5LDY4MyBMMzQ5LDY4MiBMMzQ1LDY4MSBMMzQ0LDY3OSBMMzQyLDY3OSBMMzQxLDY3NyBMMzM5LDY3NyBMMzM1LDY3MiBMMzMzLDY3MiBMMzMyLDY2OSBMMzI3LDY2NSBMMzI3LDY2MyBMMzI1LDY2MiBMMzI0LDY1OCBMMzIyLDY1NyBMMzIyLDY1NSBMMzIxLDY1NSBMMzIxLDY1MyBMMzIwLDY1MyBMMzIwLDY1MCBMMzE5LDY1MCBMMzE4LDY0NSBMMzE3LDY0NSBMMzE3LDY0MiBMMzE2LDY0MiBMMzE2LDYzOCBMMzE1LDYzOCBMMzE1LDYzNCBMMzE0LDYzNCBMMzE0LDYyOSBMMzEzLDYyOSBMMzEzLDYxOSBMMzEyLDYxOSBMMzEyLDYwNCBMMzEzLDYwNCBMMzE0LDU4OSBMMzE1LDU4OSBMMzE2LDU4MCBMMzE3LDU4MCBMMzE3LDU3NyBMMzE4LDU3NyBMMzE5LDU3MSBMMzIwLDU3MSBMMzIwLDU2OSBMMzIxLDU2OSBMMzIxLDU2NiBMMzIyLDU2NiBMMzI0LDU2MCBMMzI2LDU1OSBMMzI3LDU1NSBMMzI5LDU1NCBMMzI5LDU1MiBMMzMyLDU1MCBMMzMyLDU0OCBMMzMzLDU0OCBMMzMzLDU0NyBMMzM0LDU0NyBMMzM0LDU0NiBMMzM1LDU0NiBMMzQwLDU0MCBMMzQyLDU0MCBMMzQ0LDUzNyBMMzQ2LDUzNyBMMzQ2LDUzNiBMMzQ5LDUzNSBMMzUwLDUzMyBMMzUyLDUzMyBMMzUyLDUzMiBMMzU0LDUzMiBMMzU0LDUzMSBMMzU2LDUzMSBMMzU2LDUzMCBMMzU4LDUzMCBMMzU4LDUyOSBMMzYxLDUyOSBMMzYxLDUyOCBMMzYzLDUyOCBMMzYzLDUyNyBMMzY3LDUyNyBMMzY3LDUyNiBMMzc1LDUyNSBMMzc1LDUyNCBMMzgwLDUyNCBMMzgwLDUyMyBMMzg4LDUyMyBMMzg4LDUyMiBaIE05OTgsNTIyIEwxMDIxLDUyMiBMMTAyMSw1MjMgTDEwMjksNTIzIEwxMDI5LDUyNCBMMTAzNyw1MjUgTDEwMzcsNTI2IEwxMDQwLDUyNiBMMTA0MCw1MjcgTDEwNDIsNTI3IEwxMDQyLDUyOCBMMTA0Nyw1MjkgTDEwNDcsNTMwIEwxMDUwLDUzMSBMMTA1MCw1MzIgTDEwNTEsNTMyIEwxMDUxLDUzMyBMMTA1Miw1MzMgTDEwNTIsNTM0IEwxMDU4LDUzOSBMMTA1OCw1NDEgTDEwNjAsNTQyIEwxMDYxLDU0NyBMMTA2Miw1NDcgTDEwNjIsNTUwIEwxMDYzLDU1MCBMMTA2Myw1NTQgTDEwNjQsNTU0IEwxMDY0LDU2MSBMMTA2NSw1NjEgTDEwNjUsNTg4IEwxMDY0LDU4OCBMMTA2NCw1OTAgTDEwNjEsNTkxIEwxMDYxLDU5MiBMMTAzNSw1OTMgTDEwMzUsNTk0IEwxMDIyLDU5NCBMMTAyMiw1OTUgTDEwMTksNTk1IEwxMDE5LDU5NCBMMTAxNyw1OTQgTDEwMTcsNTkzIEwxMDE1LDU5MiBMMTAxNSw1ODIgTDEwMTQsNTgyIEwxMDE0LDU3OCBMMTAxMyw1NzggTDEwMTMsNTc2IEwxMDEyLDU3NiBMMTAxMSw1NzQgTDEwMDksNTc0IEwxMDA5LDU3MyBMMTAwOCw1NzMgTDEwMDgsNTc0IEwxMDA1LDU3NCBMMTAwNSw1NzUgTDEwMDMsNTc2IEwxMDAyLDU4MSBMMTAwMSw1ODEgTDEwMDEsNTg1IEwxMDAwLDU4NSBMMTAwMCw2MjQgTDEwMDEsNjI0IEwxMDAxLDYyOSBMMTAwMiw2MjkgTDEwMDMsNjM0IEwxMDA0LDYzNCBMMTAwNSw2MzYgTDEwMDcsNjM2IEwxMDA3LDYzNyBMMTAxMCw2MzcgTDEwMTAsNjM2IEwxMDEzLDYzNSBMMTAxNCw2MzAgTDEwMTUsNjMwIEwxMDE2LDYxOSBMMTAxNyw2MTkgTDEwMTcsNjE3IEwxMDE5LDYxNyBMMTAxOSw2MTYgTDEwNjEsNjE5IEwxMDYxLDYyMCBMMTA2Myw2MjAgTDEwNjQsNjIzIEwxMDY1LDYyMyBMMTA2NSw2NDIgTDEwNjUsNjQ5IEwxMDY0LDY0OSBMMTA2Myw2NjAgTDEwNjIsNjYwIEwxMDYxLDY2NiBMMTA2MCw2NjYgTDEwNTksNjcwIEwxMDU3LDY3MSBMMTA1Nyw2NzMgTDEwNTYsNjczIEwxMDU2LDY3NCBMMTA1NSw2NzQgTDEwNTUsNjc1IEwxMDU0LDY3NSBMMTA0OSw2ODEgTDEwNDcsNjgxIEwxMDQ2LDY4MyBMMTA0NCw2ODMgTDEwNDQsNjg0IEwxMDQyLDY4NCBMMTA0Miw2ODUgTDEwNDAsNjg1IEwxMDQwLDY4NiBMMTAzNCw2ODcgTDEwMzQsNjg4IEwxMDMwLDY4OCBMMTAzMCw2ODkgTDEwMjQsNjg5IEwxMDI0LDY5MCBMOTk0LDY5MCBMOTk0LDY4OSBMOTg3LDY4OSBMOTg3LDY4OCBMOTc5LDY4NyBMOTc5LDY4NiBMOTc0LDY4NSBMOTc0LDY4NCBMOTcyLDY4NCBMOTcyLDY4MyBMOTY2LDY4MSBMOTY1LDY3OSBMOTYzLDY3OSBMOTYzLDY3OCBMOTYyLDY3OCBMOTYyLDY3NyBMOTYxLDY3NyBMOTYxLDY3NiBMOTYwLDY3NiBMOTYwLDY3NSBMOTU5LDY3NSBMOTU5LDY3NCBMOTUzLDY2OSBMOTUzLDY2NyBMOTUxLDY2NiBMOTUxLDY2NCBMOTUwLDY2NCBMOTUwLDY2MiBMOTQ5LDY2MiBMOTQ5LDY2MCBMOTQ4LDY2MCBMOTQ4LDY1OCBMOTQ3LDY1OCBMOTQ3LDY1NiBMOTQ2LDY1NiBMOTQ2LDY1MyBMOTQ1LDY1MyBMOTQ1LDY1MSBMOTQ0LDY1MSBMOTQ0LDY0NyBMOTQzLDY0NyBMOTQzLDY0MyBMOTQyLDY0MyBMOTQyLDYzOSBMOTQxLDYzOSBMOTQxLDYzMyBMOTQwLDYzMyBMOTM5LDYxNiBMOTM4LDYxNiBMOTM4LDU5MiBMOTM5LDU5MiBMOTM5LDU4MiBMOTQwLDU4MiBMOTQwLDU3NiBMOTQxLDU3NiBMOTQxLDU3MSBMOTQyLDU3MSBMOTQzLDU2MyBMOTQ0LDU2MyBMOTQ1LDU1NyBMOTQ2LDU1NyBMOTQ2LDU1NSBMOTQ3LDU1NSBMOTQ5LDU0OSBMOTUxLDU0OCBMOTUxLDU0NiBMOTUzLDU0NSBMOTUzLDU0MyBMOTU0LDU0MyBMOTU0LDU0MiBMOTU1LDU0MiBMOTU1LDU0MSBMOTU2LDU0MSBMOTYxLDUzNSBMOTYzLDUzNSBMOTYzLDUzNCBMOTY2LDUzMyBMOTY3LDUzMSBMOTY5LDUzMSBMOTY5LDUzMCBMOTcxLDUzMCBMOTcxLDUyOSBMOTczLDUyOSBMOTczLDUyOCBMOTc2LDUyOCBMOTc2LDUyNyBMOTc4LDUyNyBMOTc4LDUyNiBMOTg1LDUyNSBMOTg1LDUyNCBMOTkwLDUyNCBMOTkwLDUyMyBMOTk4LDUyMyBMOTk4LDUyMiBaIE00NzQsNTI0IEw1NzMsNTI0IEw1NzMsNTI1IEw1NzUsNTI1IEw1NzUsNTI2IEw1NzcsNTI3IEw1NzcsNTI5IEw1NzgsNTI5IEw1NzgsNTczIEw1NzcsNTczIEw1NzUsNTc2IEw1MzUsNTc2IEw1MzUsNTg0IEw1NzEsNTg0IEw1NzEsNTg1IEw1NzMsNTg2IEw1NzMsNTg4IEw1NzQsNTg4IEw1NzQsNjIxIEw1NzMsNjIxIEw1NzIsNjI0IEw1NzAsNjI0IEw1NzAsNjI1IEw1MzUsNjI1IEw1MzUsNjMzIEw1NjIsNjMzIEw1NzgsNjMzIEw1NzgsNjM0IEw1ODAsNjM0IEw1ODAsNjM1IEw1ODIsNjM2IEw1ODIsNjM5IEw1ODMsNjM5IEw1ODMsNjgzIEw1ODIsNjgzIEw1ODIsNjg2IEw1ODEsNjg2IEw1ODEsNjg3IEw1NzksNjg3IEw1NzksNjg4IEw0NzIsNjg4IEw0NzIsNjg3IEw0NzAsNjg3IEw0NzAsNjg1IEw0NjksNjg1IEw0NjksNjc3IEw0NjgsNjc3IEw0NjgsNTMzIEw0NjksNTMzIEw0NjksNTI3IEw0NzAsNTI3IEw0NzEsNTI1IEw0NzQsNTI1IEw0NzQsNTI0IFogTTU4Nyw1MjQgTDY5Miw1MjQgTDY5Miw1MjUgTDY5NSw1MjUgTDY5NSw1MjYgTDY5Niw1MjYgTDY5Niw1MjggTDY5Nyw1MjggTDY5Nyw1NzggTDY5Niw1NzggTDY5NCw1ODEgTDY3MCw1ODEgTDY3MCw2NjUgTDY3MCw2ODQgTDY2OSw2ODQgTDY2OSw2ODYgTDY2Niw2ODcgTDY2Niw2ODggTDYwNiw2ODggTDYwNiw2ODcgTDYwNCw2ODYgTDYwNCw2ODQgTDYwMyw2ODQgTDYwMyw1ODEgTDU4Niw1ODEgTDU4Niw1ODAgTDU4NCw1ODAgTDU4NCw1NzggTDU4Myw1NzggTDU4Myw1MjggTDU4NCw1MjggTDU4NCw1MjYgTDU4Nyw1MjUgTDU4Nyw1MjQgWiBNNzM1LDUyNCBMODA5LDUyNCBMODA5LDUyNSBMODI2LDUyNiBMODI2LDUyNyBMODM0LDUyOCBMODM0LDUyOSBMODM5LDUzMCBMODM5LDUzMSBMODQzLDUzMiBMODQ0LDUzNCBMODQ2LDUzNCBMODQ4LDUzNyBMODUwLDUzNyBMODUwLDUzOCBMODU0LDU0MSBMODU0LDU0MyBMODU2LDU0NCBMODU3LDU0OCBMODU5LDU0OSBMODU5LDU1MiBMODYwLDU1MiBMODYwLDU1NCBMODYxLDU1NCBMODYxLDU1OCBMODYyLDU1OCBMODYyLDU2MyBMODYzLDU2MyBMODYzLDU4NSBMODYyLDU4NSBMODYxLDU5NCBMODYwLDU5NCBMODYwLDU5NiBMODU5LDU5NiBMODU5LDU5OSBMODU4LDU5OSBMODU3LDYwMyBMODU2LDYwMyBMODU1LDYwNiBMODUzLDYwNyBMODUzLDYwOSBMODUyLDYwOSBMODQ4LDYxNCBMODQ2LDYxNCBMODQ0LDYxNyBMODM4LDYxOSBMODM4LDYyMyBMODM5LDYyMyBMODM5LDYyNSBMODQwLDYyNSBMODQwLDYyNyBMODQxLDYyNyBMODQxLDYyOSBMODQyLDYyOSBMODQyLDYzMSBMODQzLDYzMSBMODQzLDYzMyBMODQ0LDYzMyBMODQ0LDYzNSBMODQ1LDYzNSBMODQ1LDYzNyBMODQ2LDYzNyBMODQ2LDYzOSBMODQ3LDYzOSBMODQ3LDY0MSBMODQ4LDY0MSBMODQ4LDY0NCBMODQ5LDY0NCBMODQ5LDY0NiBMODUwLDY0NiBMODUwLDY0OCBMODUxLDY0OCBMODUxLDY1MCBMODUyLDY1MCBMODUyLDY1MiBMODUzLDY1MiBMODUzLDY1NCBMODU0LDY1NCBMODU0LDY1NiBMODU1LDY1NiBMODU1LDY1OSBMODU2LDY1OSBMODU2LDY2MSBMODU3LDY2MSBMODU3LDY2MyBMODU4LDY2MyBMODU4LDY2NSBMODU5LDY2NSBMODU5LDY2NyBMODYwLDY2NyBMODYwLDY2OSBMODYxLDY2OSBMODYxLDY3MSBMODYyLDY3MSBMODYyLDY3MyBMODYzLDY3MyBMODYzLDY3NiBMODY0LDY3NiBMODY0LDY3OCBMODY1LDY3OCBMODY2LDY4NCBMODY1LDY4NCBMODY1LDY4NiBMODY0LDY4NiBMODYzLDY4OCBMODMwLDY4OCBMODA3LDY4OCBMODA3LDY4NyBMODA0LDY4NSBMODA0LDY4MiBMODAzLDY4MiBMODAzLDY3OSBMODAyLDY3OSBMODAyLDY3NiBMODAxLDY3NiBMODAxLDY3MiBMODAwLDY3MiBMODAwLDY2OSBMNzk5LDY2OSBMNzk5LDY2NiBMNzk4LDY2NiBMNzk4LDY2MyBMNzk3LDY2MyBMNzk3LDY2MCBMNzk2LDY2MCBMNzk2LDY1NyBMNzk1LDY1NyBMNzk1LDY1MyBMNzk0LDY1MyBMNzk0LDY1MCBMNzkzLDY1MCBMNzkzLDY0NyBMNzkyLDY0NyBMNzkxLDY0MSBMNzkwLDY0MSBMNzkwLDYzOSBMNzg5LDYzOSBMNzg5LDYzNiBMNzg3LDYzNiBMNzg3LDYzNyBMNzg4LDYzNyBMNzg4LDY0MSBMNzg3LDY0MSBMNzg3LDY0OCBMNzg4LDY0OCBMNzg3LDY3MiBMNzg4LDY3MiBMNzg4LDY3NiBMNzg3LDY3NiBMNzg3LDY4NSBMNzg2LDY4NSBMNzg2LDY4NyBMNzg0LDY4NyBMNzg0LDY4OCBMNzMzLDY4OCBMNzMzLDY4NyBMNzMwLDY4NiBMNzMwLDY4MyBMNzI5LDY4MyBMNzI5LDY2MiBMNzMwLDY2MiBMNzMwLDUyOCBMNzMxLDUyOCBMNzMyLDUyNSBMNzM1LDUyNSBMNzM1LDUyNCBaIE04NzQsNTI0IEw5MjgsNTI0IEw5MjgsNTI1IEw5MzAsNTI1IEw5MzAsNTI2IEw5MzIsNTI3IEw5MzIsNTI5IEw5MzMsNTI5IEw5MzMsNjg0IEw5MzIsNjg0IEw5MzEsNjg3IEw5MjgsNjg4IEw4NzQsNjg4IEw4NzQsNjg3IEw4NzIsNjg3IEw4NzIsNjg2IEw4NzAsNjg1IEw4NzAsNTQ4IEw4NjksNTQ4IEw4NjksNTMyIEw4NzAsNTMyIEw4NzAsNTI3IEw4NzEsNTI3IEw4NzIsNTI1IEw4NzQsNTI1IEw4NzQsNTI0IFogTTEwNzYsNTI0IEwxMTI3LDUyNCBMMTEyNyw1MjUgTDExMzAsNTI1IEwxMTMwLDUyNiBMMTEzMiw1MjcgTDExMzIsNTMwIEwxMTMzLDUzMCBMMTEzMyw1NzggTDExNTAsNTc4IEwxMTUwLDUzMCBMMTE1MSw1MzAgTDExNTEsNTI3IEwxMTUyLDUyNyBMMTE1Myw1MjUgTDExNTUsNTI1IEwxMTU1LDUyNCBMMTIxMCw1MjQgTDEyMTAsNTI1IEwxMjEzLDUyNSBMMTIxMyw1MjYgTDEyMTQsNTI2IEwxMjE0LDUyOCBMMTIxNSw1MjggTDEyMTUsNTczIEwxMjE2LDU3MyBMMTIxNiw2NDggTDEyMTcsNjQ4IEwxMjE3LDY4MyBMMTIxNiw2ODMgTDEyMTUsNjg3IEwxMjEzLDY4NyBMMTIxMyw2ODggTDEyMDksNjg4IEwxMTU1LDY4OCBMMTE1NSw2ODcgTDExNTMsNjg3IEwxMTUzLDY4NSBMMTE1Miw2ODUgTDExNTIsNjgzIEwxMTUxLDY4MyBMMTE1MSw2MzEgTDExMzMsNjMxIEwxMTMzLDY4NSBMMTEzMiw2ODUgTDExMzEsNjg3IEwxMTI5LDY4NyBMMTEyOSw2ODggTDEwNzUsNjg4IEwxMDc1LDY4NyBMMTA3Myw2ODcgTDEwNzMsNjg1IEwxMDcyLDY4NSBMMTA3Miw2ODMgTDEwNzEsNjgzIEwxMDcxLDUyOSBMMTA3Miw1MjkgTDEwNzIsNTI3IEwxMDczLDUyNyBMMTA3NCw1MjUgTDEwNzYsNTI1IEwxMDc2LDUyNCBaIE03ODksNTY1IEw3ODcsNTY2IEw3ODcsNTY3IEw3ODgsNTY3IEw3ODgsNTk1IEw3OTUsNTk1IEw3OTUsNTk0IEw3OTgsNTk0IEw3OTgsNTkzIEw4MDAsNTkyIEw4MDIsNTkxIEw4MDIsNTg5IEw4MDMsNTg5IEw4MDMsNTg3IEw4MDQsNTg3IEw4MDQsNTg0IEw4MDUsNTg0IEw4MDUsNTc0IEw4MDQsNTc0IEw4MDQsNTcxIEw4MDIsNTcwIEw4MDIsNTY4IEw4MDAsNTY4IEw4MDAsNTY3IEw3OTcsNTY2IEw3OTcsNTY1IEw3ODksNTY1IFoiLz48L2c+PC9zdmc+">
+    <button type="button" class="demo-chip" id="demo-chip" aria-haspopup="dialog">Demo · made-up numbers</button></div>`;
+}
+function dateLabel() { const d = new Date(S.year, S.month - 1, S.day); return d.toLocaleDateString("en-SG", { weekday: "short", day: "numeric", month: "short" }); }
+
+function renderMonth() {
+  const c = calc(), monthEnd = S.day >= c.dim - 2;
+  let html = header() + `<div class="monthbar"><h1>${MONTHS[S.month - 1]}</h1><span class="muted">Today: ${dateLabel()}</span></div>`;
+
+  // Month-end prompt (from 3 days before the end, only when money is left)
+  if (monthEnd && c.left > 0 && !promptDone) {
+    html += `<section class="card prompt" aria-label="Save what's left"><h2>Almost month end, and you didn't spend ${fmt(c.left)}. Save it?</h2>
+      <p class="muted">Saving it adds to Put aside. You can also save part of it.</p>
+      <div class="btn-row"><button class="btn" id="save-all">Save it</button><button class="btn secondary" id="save-some">Save some</button><button class="btn link" id="save-not">Not now</button></div></section>`;
+  }
+
+  // Lead card
+  html += `<section class="card lead" aria-label="Left to spend"><div class="label"><span>Left to spend</span><button type="button" class="info" id="info" aria-expanded="${openWorkings}" aria-label="How is this worked out?">i</button></div>`;
+  if (c.left >= 0) {
+    html += `<div class="amount num">${fmt(c.left)}</div>`;
+    html += c.daysLeft > 1 ? `<div class="perday">about <strong class="num">${fmt0(c.perDay)}</strong> a day for the next ${c.daysLeft} days</div>`
+                           : `<div class="perday">last day of the month</div>`;
+  } else {
+    const next = MONTHS[S.month % 12];
+    html += `<div class="amount num neg">${fmt(-c.left)} over</div>
+      <div class="over-box"><strong>This month went ${fmt(-c.left)} past what came in.</strong>
+      ${c.biggest ? `<span>Biggest one-off: ${esc(c.biggest.note)}, ${fmt(c.biggest.amt)}</span>` : ""}
+      <span>${next} starts fresh at ${fmt(c.money - c.bills - c.saveup - c.savings)}.</span></div>`;
+  }
+  if (openWorkings) {
+    html += `<div class="workings" id="workings"><div class="line"><span>Money in</span><span>${fmt(c.money)}</span></div>
+      <div class="line"><span>− Monthly bills</span><span>${fmt(c.bills)}</span></div>
+      <div class="line"><span>− Bills you save up for</span><span>${fmt(c.saveup)}</span></div>
+      <div class="line"><span>− Savings</span><span>${fmt(c.savings)}</span></div>
+      <div class="line"><span>− Spent so far</span><span>${fmt(c.spent)}</span></div>
+      ${c.moved ? `<div class="line"><span>− Moved to savings</span><span>${fmt(c.moved)}</span></div>` : ""}
+      <div class="line total"><span>Left to spend</span><span>${fmt(c.left)}</span></div>
+      <p class="muted small">The per-day figure only counts what's left in your spending limits (${fmt(c.limitsLeft)}), not Spare.</p></div>`;
+  }
+  html += `<div class="lines"><div class="line"><span>Spare (not in any limit)</span><span class="${c.spare < 0 ? "neg" : ""}">${c.spare < 0 ? fmt(0) + " · used up" : fmt(c.spare)}</span></div>
+    <div class="line"><span>Put aside this year</span><span>${fmt(c.putAsideYear)} <span class="pos">▲ ${fmt0(c.savings + c.moved)}</span></span></div></div></section>`;
+
+  // Checklist
+  const ck = state.checklist, dueBill = PLAN.saveups.find(s => s.due === S.month);
+  const items = [
+    ["salary", "Salary arrived", ""],
+    ["bills", `Move ${fmt(c.saveup)} to your bills account`, `${PLAN.saveups.length} pots: ${PLAN.saveups.map(s => s.name).join(", ")}`],
+    ["savings", `${PLAN.savings[0].name}: ${fmt(PLAN.savings[0].amt)}`, "Move it to your savings account"],
+  ];
+  if (dueBill) items.push(["due", `Pay ${dueBill.name} ${fmt(dueBill.yearly)} from your bills account`, "Due this month. It's already saved, so it doesn't change Left to spend."]);
+  const doneN = items.filter(i => ck[i[0]]).length;
+  if (doneN < items.length) {
+    html += `<section class="card" aria-label="This month's checklist"><div class="card-head"><h2>This month's checklist</h2><span class="muted">${doneN} of ${items.length} done</span></div>
+      ${items.map(([k, t, s]) => `<div class="check ${ck[k] ? "done" : ""}" role="checkbox" tabindex="0" aria-checked="${!!ck[k]}" data-check="${k}"><span class="box" aria-hidden="true">${ck[k] ? "✓" : ""}</span><span><span class="text">${esc(t)}</span>${s ? `<br><span class="sub">${esc(s)}</span>` : ""}</span></div>`).join("")}</section>`;
+  } else {
+    html += `<section class="card flat" aria-label="This month's checklist"><div class="card-head"><h2>Checklist done ✓</h2><span class="muted">${items.length} of ${items.length}</span></div></section>`;
+  }
+
+  // Spending limits
+  html += `<section class="card" aria-label="Spending limits"><h2>Spending limits</h2>`;
+  Object.entries(PLAN.limits).forEach(([cat, lim]) => {
+    const sp = c.byCat[cat] || 0, pct = Math.min(100, sp / lim * 100), over = sp > lim, warn = !over && sp >= lim * 0.8;
+    html += `<div class="limit"><div class="line"><strong>${cat}</strong><span>${fmt(sp)} of ${fmt0(lim)}</span></div>
+      <div class="meter ${over ? "over" : warn ? "warn" : ""}" role="meter" aria-valuemin="0" aria-valuemax="${lim}" aria-valuenow="${Math.round(sp)}" aria-label="${cat} spent"><i style="width:${pct}%"></i></div>
+      <div class="line small"><span class="muted"></span><span class="${over ? "neg" : ""}">${over ? fmt(sp - lim) + " over" : fmt(lim - sp) + " left"}</span></div>`;
+    if (PLAN.countLimit.cat === cat) { const n = weekCount(); html += `<div class="count">${PLAN.countLimit.label}: <strong>${n}</strong> this week (your limit: ${PLAN.countLimit.perWeek})${n > PLAN.countLimit.perWeek ? " · over" : ""}</div>`; }
+    html += `</div>`;
+  });
+  PLAN.noLimit.forEach(cat => { if (c.byCat[cat]) html += `<div class="limit"><div class="line"><strong>${cat}</strong><span>${fmt(c.byCat[cat])} · no limit</span></div></div>`; });
+  html += `</section>`;
+
+  // Big one-offs
+  const oo = oneOffsThisYear();
+  html += `<section class="card" aria-label="Big one-offs this year"><div class="card-head"><h2>Big one-offs this year</h2><span class="num"><strong>${fmt(oo.total)}</strong></span></div>
+    <p class="muted">Single expenses of ${fmt0(PLAN.oneOffAt)} or more.</p><div class="rows">`;
+  Object.entries(oo.groups).sort((a, b) => b[1].amt - a[1].amt).forEach(([g, v]) => {
+    html += `<div class="row"><span><strong>${esc(g)}</strong><br><span class="muted small">${v.items.map(i => esc(i.note) + " (" + MON3[i.month - 1] + ")").join(", ")}</span></span><span class="r">${v.n} item${v.n > 1 ? "s" : ""}</span><span class="r">${fmt(v.amt)}</span></div>`;
+    if (v.n >= 2) html += `<div class="row"><span class="muted small">Came back ${v.n} times. Save up about ${fmt0(v.amt / 12)} a month for this?</span><span></span><span class="r"><button class="btn inline" data-saveup="${esc(g)}">Save up</button></span></div>`;
+  });
+  html += `</div></section>`;
+
+  // Things you buy often
+  const rb = repeatBuys();
+  html += `<section class="card" aria-label="Things you buy often"><h2>Things you buy often</h2><div class="rows">
+    <div class="row head"><span></span><span class="r">This month</span><span class="r">Usual by now</span></div>
+    ${rb.map(x => `<div class="row"><span><strong>${x.name}</strong> ${x.trend === "down" ? '<span class="tag good">▼ nice</span>' : x.trend === "up" ? '<span class="tag plain">▲ more</span>' : ""}</span><span class="r">${x.n} · ${fmt0(x.amt)}</span><span class="r muted">${Math.round(x.un)} · ${fmt0(x.ua)}</span></div>`).join("")}
+    </div><p class="muted small">From the notes you type. You decide what's worth cutting.</p></section>`;
+
+  // Bills you save up for
+  const potTotal = sum(Object.values(state.pots));
+  html += `<section class="card" aria-label="Bills you save up for"><h2>Bills you save up for</h2><div class="rows">
+    ${PLAN.saveups.map(s => { const pot = state.pots[s.name]; const paid = s.due < S.month || (s.due === S.month && state.checklist.due);
+      const monthsTo = ((s.due - S.month + 12) % 12) || (paid ? 12 : 0);
+      const willHave = pot + s.amt * monthsTo; const ok = paid || willHave >= s.yearly;
+      return `<div class="row"><span><strong>${s.name}</strong><br><span class="muted small">${fmt0(s.yearly)} a year · ${paid ? "paid in " + MON3[s.due - 1] + ", refilling" : "due " + MON3[s.due - 1]}</span></span><span class="r">${fmt0(pot)} saved</span><span class="r"><span class="tag ${ok ? "good" : "plain"}">${paid ? "paid" : pot >= s.yearly ? "ready" : ok ? "on track" : "short"}</span></span></div>`; }).join("")}
+    </div><div class="line"><span>Pots total</span><strong class="num">${fmt(potTotal)}</strong></div>
+    <p class="muted">Does your bills account show ${fmt(potTotal)}?</p><div class="btn-row"><button class="btn inline" id="pots-yes">Yes</button><button class="btn secondary inline" id="pots-no">No</button></div></section>`;
+
+  // Put aside and Kept
+  const c2 = c;
+  html += `<section class="card" aria-label="Put aside"><div class="card-head"><h2>Put aside</h2><strong class="num">${fmt(c2.putAsideYear)} this year</strong></div>
+    <div class="line"><span>Monthly savings plan</span><span>${fmt(PLAN.savings[0].amt * S.month)}</span></div>
+    <div class="line"><span>Moved to savings</span><span>${fmt(c2.putAsideYear - PLAN.savings[0].amt * S.month)}</span></div>
+    <div class="line" style="border-top:1px solid var(--rule);padding-top:8px"><span>Kept this month</span><span class="${c2.kept < 0 ? "neg" : ""}">${fmt(c2.kept)}</span></div>
+    <p class="muted small">${c2.kept >= c2.savings + c2.moved
+      ? `Kept is what didn't go on bills or spending. ${fmt(c2.savings + c2.moved)} of it is put aside; the rest is still in your everyday account.`
+      : `You put aside ${fmt(c2.savings + c2.moved)}, and spent ${fmt(c2.savings + c2.moved - c2.kept)} more than came in, so your everyday account went down.`}</p></section>`;
+
+  app.innerHTML = html;
+  bindCommon();
+  const q = id => document.getElementById(id);
+  q("info").onclick = () => { openWorkings = !openWorkings; render(); };
+  document.querySelectorAll("[data-check]").forEach(el => {
+    const toggle = () => { const k = el.dataset.check; state.checklist[k] = !state.checklist[k]; render(); if (state.checklist[k]) toast(k === "bills" ? `Ticked. ${fmt(calc().saveup)} is in your bills account.` : k === "savings" ? `Ticked. Put aside this year: ${fmt(calc().putAsideYear)}.` : "Ticked."); };
+    el.onclick = toggle; el.onkeydown = e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggle(); } };
+  });
+  if (q("save-all")) {
+    q("save-all").onclick = () => saveAmount(calc().left);
+    q("save-some").onclick = () => sheetSaveSome();
+    q("save-not").onclick = () => { promptDone = true; render(); toast("OK. Whatever's left stays in your everyday account."); };
+  }
+  document.querySelectorAll("[data-saveup]").forEach(b => b.onclick = () => toast(`Prototype: this would add "${b.dataset.saveup}" to Bills you save up for.`));
+  q("pots-yes").onclick = () => toast("Good. Your pots match your bills account.");
+  q("pots-no").onclick = () => toast("Prototype: this would let you type the real balance and fix the pots.");
+}
+function saveAmount(a) {
+  a = Math.round(a * 100) / 100; if (!(a > 0)) return;
+  state.entries.push({ id: "s" + Date.now(), day: S.day, cat: null, amt: a, note: "Moved to savings", kind: "saved" });
+  promptDone = true; render(); toast(`Saved ${fmt(a)}. Put aside this year: ${fmt(calc().putAsideYear)} ▲`);
+  document.querySelector('[aria-label="Put aside"]')?.classList.add("glow");
+}
+
+function renderLog() {
+  const c = calc();
+  app.innerHTML = header() + `<div class="monthbar"><h1>Log</h1><span class="muted">Left to spend: <strong class="num">${fmt(c.left)}</strong></span></div>
+  <section class="card"><div class="seg" role="group" aria-label="What is it?">
+    <button aria-pressed="true" data-kind="expense">Daily expense</button><button aria-pressed="false" data-kind="bill">Bill</button>
+    <button aria-pressed="false" data-kind="saved">Saved</button><button aria-pressed="false" data-kind="income">Extra income</button></div>
+    <div class="amount-input"><span>$</span><input id="amt" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" aria-label="Amount"></div>
+    <div class="chips" role="group" aria-label="Category" id="cats">${Object.keys(PLAN.limits).concat(PLAN.noLimit).map((k, i) => `<button class="chip" aria-pressed="${i === 0}" data-cat="${k}">${k}</button>`).join("")}</div>
+    <label for="note">Note<input id="note" type="text" placeholder="What was it? e.g. Kopi"></label>
+    <label for="day">Day<select id="day"><option value="${S.day}">Today, ${dateLabel()}</option>${S.day > 1 ? `<option value="${S.day - 1}">Yesterday</option>` : ""}${Array.from({ length: Math.max(0, S.day - 2) }, (_, i) => S.day - 2 - i).map(d => `<option value="${d}">${d} ${MON3[S.month - 1]}</option>`).join("")}</select></label>
+    <button class="btn" id="add">Add</button></section>`;
+  bindCommon();
+  let kind = "expense", cat = Object.keys(PLAN.limits)[0];
+  document.querySelectorAll("[data-kind]").forEach(b => b.onclick = () => {
+    if (b.dataset.kind === "bill" || b.dataset.kind === "income") { toast("Not in this prototype. Try Daily expense or Saved."); return; }
+    kind = b.dataset.kind; document.querySelectorAll("[data-kind]").forEach(x => x.setAttribute("aria-pressed", x === b));
+    document.getElementById("cats").hidden = kind !== "expense";
+  });
+  document.querySelectorAll("[data-cat]").forEach(b => b.onclick = () => { cat = b.dataset.cat; document.querySelectorAll("[data-cat]").forEach(x => x.setAttribute("aria-pressed", x === b)); });
+  document.getElementById("add").onclick = () => {
+    const a = parseFloat((document.getElementById("amt").value || "").replace(/[^0-9.]/g, ""));
+    if (!(a > 0)) { toast("Type an amount first."); document.getElementById("amt").focus(); return; }
+    const note = document.getElementById("note").value.trim(), day = +document.getElementById("day").value;
+    if (kind === "saved") { state.entries.push({ id: "s" + Date.now(), day, cat: null, amt: a, note: note || "Moved to savings", kind: "saved" }); renderLog(); toast(`${fmt(a)} moved to savings. Put aside this year: ${fmt(calc().putAsideYear)}.`); return; }
+    const e = { id: "e" + Date.now(), day, cat, amt: Math.round(a * 100) / 100, note: note || cat, kind: "expense", oneOff: a >= PLAN.oneOffAt };
+    state.entries.push(e); if (e.oneOff) GROUPS[e.note] = GROUPS[e.note] || "Other";
+    renderLog();
+    const after = calc(), lim = PLAN.limits[cat], sp = after.byCat[cat] || 0;
+    const msg = `Added ${fmt(e.amt)} · ${cat}. Left to spend: ${fmt(after.left)}.` + (lim && sp > lim ? ` ${cat} is ${fmt(sp - lim)} over its limit.` : "");
+    if (e.oneOff) sheetOneOff(e, msg); else toast(msg);
+  };
+}
+function sheetOneOff(e, msg) {
+  const monthly = Math.ceil(e.amt / 12);
+  openSheet(`<h2>Is this a one-off?</h2><p>${esc(e.note)}, ${fmt(e.amt)}, is a big amount for one entry.</p>
+    <p class="muted">Things like this tend to come back (repairs, flights, gifts). Setting aside about <strong>${fmt0(monthly)} a month</strong> means next time it's already paid for.</p>
+    <div class="btn-row"><button class="btn" id="oo-save">Yes, save up for this</button><button class="btn secondary" id="oo-once">Just a one-off</button><button class="btn link" id="oo-not">Not a one-off</button></div>`);
+  document.getElementById("oo-save").onclick = () => { closeSheet(); toast(`${msg} Prototype: this would add a ${fmt0(monthly)}-a-month save-up line.`); };
+  document.getElementById("oo-once").onclick = () => { closeSheet(); toast(msg + " Added to Big one-offs this year."); };
+  document.getElementById("oo-not").onclick = () => { e.oneOff = false; closeSheet(); toast(msg); };
+}
+function sheetSaveSome() {
+  const c = calc();
+  openSheet(`<h2>Save some of it</h2><p class="muted">You didn't spend ${fmt(c.left)} this month. How much should go to savings?</p>
+    <label for="some">Amount<input id="some" type="text" inputmode="decimal" value="${Math.floor(c.left / 2)}"></label>
+    <div class="btn-row"><button class="btn" id="some-ok">Save</button><button class="btn secondary" id="some-cancel">Cancel</button></div>`);
+  document.getElementById("some-ok").onclick = () => { const a = Math.min(calc().left, parseFloat(document.getElementById("some").value) || 0); closeSheet(); saveAmount(a); };
+  document.getElementById("some-cancel").onclick = closeSheet;
+}
+
+function renderBudget() {
+  const c = calc(), lim = sum(Object.values(PLAN.limits)), spareStart = c.money - c.bills - c.saveup - c.savings - lim;
+  const block = (t, rows) => `<section class="card"><h2>${t}</h2><div class="rows">${rows.map(([n, a, s]) => `<div class="row"><span>${esc(n)}${s ? `<br><span class="muted small">${esc(s)}</span>` : ""}</span><span></span><span class="r">${fmt(a)}</span></div>`).join("")}</div></section>`;
+  app.innerHTML = header() + `<div class="monthbar"><h1>Budget</h1><span class="muted">Every month</span></div>` +
+    block("Money in", PLAN.income.map(x => [x.name, x.amt])) +
+    block("Monthly bills", PLAN.bills.map(x => [x.name, x.amt])) +
+    block("Savings", PLAN.savings.map(x => [x.name, x.amt, "Comes off the top. Counts as Put aside."])) +
+    block("Bills you save up for", PLAN.saveups.map(x => [x.name, x.amt, `${fmt0(x.yearly)} a year, due ${MONTHS[x.due - 1]}`])) +
+    block("Spending limits", Object.entries(PLAN.limits).map(([k, v]) => [k, v, k === "Food" ? "Also: nice meals over $40, 2 a week" : ""])) +
+    `<section class="card lead"><div class="line"><strong>Spare (not in any limit)</strong><strong class="num">${fmt(spareStart)}</strong></div>
+     <p class="muted">A buffer for the month. Near month end the app offers to save whatever you didn't spend.</p></section>`;
+  bindCommon();
+}
+function renderHistory() {
+  const es = state.entries.slice().sort((a, b) => b.day - a.day || b.id.localeCompare(a.id)).slice(0, 40);
+  app.innerHTML = header() + `<div class="monthbar"><h1>History</h1><span class="muted">${MONTHS[S.month - 1]}</span></div>
+    <section class="card"><div class="rows">${es.map(e => `<div class="row"><span>${esc(e.note)}<br><span class="muted small">${e.day} ${MON3[S.month - 1]} · ${e.kind === "saved" ? "Saved" : esc(e.cat)}${e.oneOff ? " · one-off" : ""}</span></span><span class="r"><button class="btn link" data-edit="${e.id}">Edit</button></span><span class="r">${fmt(e.amt)}</span></div>`).join("")}</div>
+    <p class="muted small">Showing the latest 40. Every month stays editable.</p></section>`;
+  bindCommon();
+  document.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => {
+    const e = state.entries.find(x => x.id === b.dataset.edit);
+    openSheet(`<h2>${esc(e.note)}</h2><p class="num">${fmt(e.amt)} · ${e.day} ${MON3[S.month - 1]}</p>
+      ${e.kind === "expense" ? `<button class="btn secondary" id="mark">${e.oneOff ? "Not a one-off" : "This was a one-off"}</button>` : ""}
+      <button class="btn" id="close">Done</button>`);
+    const m = document.getElementById("mark");
+    if (m) m.onclick = () => { e.oneOff = !e.oneOff; if (e.oneOff) GROUPS[e.note] = GROUPS[e.note] || "Other"; closeSheet(); renderHistory(); toast(e.oneOff ? "Marked as a one-off. It's on Big one-offs this year." : "No longer a one-off."); };
+    document.getElementById("close").onclick = closeSheet;
+  });
+}
+
+/* Setup step: yearly bills, prompted by category */
+const PROMPTS = [
+  ["Insurance premiums", "Life, health, home, car: paid once a year"], ["Property tax", "IRAS, usually due in January"],
+  ["Income tax", "IRAS, if you pay it in one go"], ["Road tax, car servicing", "If you have a car or motorbike"],
+  ["Festive gifts", "CNY ang bao, Hari Raya, Deepavali, Christmas"], ["Birthdays and weddings", "Gifts, red packets, parties"],
+  ["Travel", "Flights and holidays you take most years"], ["Home upkeep and repairs", "Aircon servicing, repairs, furniture"],
+  ["Yearly renewals", "Subscriptions, memberships, licences paid yearly"], ["School or course fees", "For you or your children"],
+];
+let setup = {};
+function renderSetup() {
+  const monthly = sum(Object.values(setup).filter(x => x.on).map(x => (parseFloat(x.amt) || 0) * (12 / x.every) / 12));
+  app.innerHTML = header() + `<div class="monthbar"><h1>Setup</h1><span class="muted">Step 4 of 7</span></div>
+  <section class="card"><h2>Bills that don't come every month</h2>
+    <p class="muted">These catch people off guard. Tap any you pay. We'll set aside a little each month so they're ready when they're due.</p>
+    <div>${PROMPTS.map(([t, ex], i) => { const s = setup[i] || {}; return `<div class="prompt-item"><button aria-expanded="${!!s.on}" data-p="${i}"><span>${t}<span class="ex">${ex}</span></span><span class="box" aria-hidden="true" style="${s.on ? "background:var(--accent);border-color:var(--accent)" : ""}">${s.on ? "✓" : ""}</span></button>
+      ${s.on ? `<div class="grid2"><label for="pa${i}">Amount each time<input id="pa${i}" type="text" inputmode="decimal" value="${s.amt || ""}" placeholder="$"></label>
+      <label for="pe${i}">How often<select id="pe${i}"><option value="12"${s.every == 12 ? " selected" : ""}>Once a year</option><option value="6"${s.every == 6 ? " selected" : ""}>Every 6 months</option><option value="3"${s.every == 3 ? " selected" : ""}>Every 3 months</option></select></label>
+      <label for="pd${i}">Next due<select id="pd${i}">${MONTHS.map((m, k) => `<option${s.due == k ? " selected" : ""} value="${k}">${m}</option>`).join("")}</select></label>
+      <label for="ps${i}">Already saved<input id="ps${i}" type="text" inputmode="decimal" value="${s.saved || ""}" placeholder="$0"></label></div>` : ""}</div>`; }).join("")}</div>
+    <div class="line"><strong>Set aside each month</strong><strong class="num">${fmt(monthly)}</strong></div>
+    <button class="btn" id="setup-next">Next</button></section>`;
+  bindCommon();
+  document.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { const i = b.dataset.p; setup[i] = setup[i] || { amt: "", every: 12, due: 0, saved: "" }; setup[i].on = !setup[i].on; renderSetup(); });
+  Object.keys(setup).forEach(i => { if (!setup[i].on) return;
+    [["pa", "amt"], ["pe", "every"], ["pd", "due"], ["ps", "saved"]].forEach(([p, k]) => { const el = document.getElementById(p + i); if (el) el.onchange = () => { setup[i][k] = el.value; renderSetup(); }; }); });
+  document.getElementById("setup-next").onclick = () => toast(`${Object.values(setup).filter(x => x.on).length} bills added. The prototype's setup ends here.`);
+}
+
+/* ── Shell: tabs, scenario picker, sheets, toast ─────────────────────── */
+function bindCommon() { document.getElementById("demo-chip").onclick = scenarioSheet; }
+function render() {
+  const isSetup = state.key === "setup";
+  document.getElementById("tabbar").hidden = isSetup;
+  document.querySelectorAll(".tab").forEach(t => t.dataset.tab === tab ? t.setAttribute("aria-current", "page") : t.removeAttribute("aria-current"));
+  if (isSetup) return renderSetup();
+  ({ month: renderMonth, log: renderLog, budget: renderBudget, history: renderHistory })[tab]();
+}
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => { tab = t.dataset.tab; render(); window.scrollTo(0, 0); });
+function scenarioSheet() {
+  openSheet(`<h2>Demo · made-up numbers</h2><p class="muted">This is a prototype of How to Get Rich. The person and every number are made up. Pick the day the form asks for:</p>
+    <div class="btn-row" style="flex-direction:column;align-items:stretch">${Object.entries(SCENARIOS).map(([k, v]) => `<button class="btn ${k === state.key ? "" : "secondary"}" data-sc="${k}">${v.label}</button>`).join("")}
+    <button class="btn ${state.key === "setup" ? "" : "secondary"}" data-sc="setup">Setup: yearly bills</button></div>
+    <button class="btn link" id="sc-close">Close</button>`);
+  document.querySelectorAll("[data-sc]").forEach(b => b.onclick = () => { closeSheet(); go(b.dataset.sc); });
+  document.getElementById("sc-close").onclick = closeSheet;
+}
+let lastFocus = null;
+function openSheet(html) {
+  lastFocus = document.activeElement;
+  const layer = document.getElementById("layer");
+  layer.innerHTML = `<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  document.getElementById("scrim").onclick = e => { if (e.target.id === "scrim") closeSheet(); };
+  layer.querySelector(".sheet button, .sheet input")?.focus();
+}
+function closeSheet() { document.getElementById("layer").innerHTML = ""; lastFocus?.focus?.(); }
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+let toastTimer = null;
+function toast(msg) {
+  const t = document.getElementById("toast"); document.getElementById("toast-text").textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, Math.max(5000, Math.min(15000, msg.split(" ").length / 2.5 * 1000)));
+}
+document.getElementById("toast-close").onclick = () => document.getElementById("toast").hidden = true;
+
+function go(key) {
+  if (key === "setup") { state = { key: "setup" }; setup = {}; S = SCENARIOS["mid-march"]; }
+  else load(key);
+  tab = "month"; if (location.hash !== "#" + key) history.replaceState(null, "", "#" + key);
+  render(); window.scrollTo(0, 0);
+}
+function fromHash() { const k = location.hash.slice(1); go(SCENARIOS[k] || k === "setup" ? k : "mid-march"); }
+window.addEventListener("hashchange", fromHash);
+fromHash();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+# gitleaks settings for this repo: the built-in rules plus Supabase's newer key format.
+# Drill on 2026-11-12 showed the built-in rules miss `sb_secret_…` keys unless the line
+# happens to contain a word like "key". Supabase docs: guides/api/api-keys.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "supabase-secret-key"
+description = "Supabase secret API key (sb_secret_…). Never commit; it bypasses Row Level Security."
+regex = '''\bsb_secret_[A-Za-z0-9_-]{20,}'''
+keywords = ["sb_secret_"]

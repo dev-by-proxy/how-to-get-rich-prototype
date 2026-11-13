@@ -1,0 +1,17 @@
+#!/bin/sh
+# Blocks a commit if gitleaks finds a password, key or token in the staged changes.
+# Turned on by `npm install` (the "prepare" script sets git's hooksPath to .githooks).
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed, so secrets can't be checked."
+  echo "Install it with:  brew install gitleaks"
+  exit 1
+fi
+
+gitleaks git --staged --redact --no-banner || {
+  echo ""
+  echo "pre-commit: gitleaks found what looks like a secret (see above). Commit blocked."
+  echo "Remove it from the file (secrets belong in .env), then commit again."
+  echo "If it's a harmless false alarm, add it to .gitleaksignore."
+  exit 1
+}
