@@ -141,6 +141,24 @@ button { font-family: var(--font-body); }
 .chip.small-chip { min-height: 36px; padding: 0 var(--s3); font-size: 0.85rem; }
 .over-box .btn-row { margin-top: var(--s1); }
 .over-box .chips { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
+/* Compare months, chart C: blue = Saved (logo colour), green = extra in the everyday account (surplus); same see-through
+   fill, each with its line. Red dot = a month that ran short. */
+.cmp-head { font-weight: 700; font-size: 1.05rem; margin: 0; }
+.cmp-chart { width: 100%; height: auto; overflow: visible; }
+.cmp-chart .grid { stroke: var(--rule); } .cmp-chart .axis0 { stroke: var(--muted); }
+.cmp-chart .tick { font-size: 10px; fill: var(--muted); font-family: var(--font-body); }
+.cmp-chart .area-saved { fill: var(--accent); opacity: .3; } .cmp-chart .area-extra { fill: var(--positive); opacity: .3; }
+.cmp-chart .ln-saved { fill: none; stroke: var(--accent); stroke-width: 2.5; } .cmp-chart .ln-total { fill: none; stroke: var(--positive); stroke-width: 2.5; }
+.cmp-chart .dot { fill: var(--positive); } .cmp-chart .dot-sofar { fill: var(--paper-2); stroke: var(--positive); stroke-width: 2; }
+.cmp-chart .dot-out { fill: var(--error); stroke: var(--paper-2); stroke-width: 1.5; }
+.cmp-chart .pick { stroke: var(--ink-2); stroke-dasharray: 3 3; }
+.legend { font-size: 0.75rem; color: var(--ink-2); margin: 0; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.sw { display: inline-block; width: 12px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+.sw-saved { background: var(--accent); } .sw-extra { background: var(--positive); } .sw-out { background: var(--error); border-radius: 50%; width: 9px; height: 9px; }
+.month-chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.month-detail { display: flex; flex-direction: column; gap: var(--s2); border-top: 1px solid var(--rule); padding-top: var(--s3); }
+.month-detail h3 { margin: 0; font-size: 1rem; } .month-detail h4 { margin: var(--s2) 0 0; font-size: 0.9rem; }
+.month-detail p { margin: 0; } .month-detail .why { background: var(--error-wash); border-radius: var(--r-control); padding: var(--s2) var(--s3); }
 
 /* Folded cards (tap to open) */
 details.card { gap: 0; }
@@ -278,13 +296,13 @@ const SCENARIOS = {
     pots: { "Life insurance": 190, "Property tax": 480, "Income tax": 60, "CNY ang bao": 150 } },
 };
 
-let S = null, state = null, tab = "month", openWorkings = false, promptDone = false, lastSaved = null, cover = null;
+let S = null, state = null, tab = "month", openWorkings = false, promptDone = false, lastSaved = null, cover = null, pickedMonth = null;
 /* How an overspent month was covered (Felix, 14 Nov). Not answered = everyday account. */
 const COVERS = { everyday: "Everyday account", card: "Credit card", savings: "Savings", pot: "Bills pot" };
 function load(key) {
   S = SCENARIOS[key];
   state = { key, entries: genMonth(S.year, S.month, S.day, S.seed, S.extra), checklist: { ...S.checklist }, saved: 0, pots: { ...S.pots } };
-  openWorkings = false; promptDone = false; lastSaved = null; cover = null; if (typeof openFolds !== "undefined") openFolds.clear();
+  openWorkings = false; promptDone = false; lastSaved = null; cover = null; pickedMonth = null; if (typeof openFolds !== "undefined") openFolds.clear();
 }
 
 /* ── The rules (same as the agreed design) ─────────────────────────────── */
@@ -339,6 +357,90 @@ function header() {
     <button type="button" class="demo-chip" id="demo-chip" aria-haspopup="dialog">Demo · made-up numbers</button></div>`;
 }
 function dateLabel() { const d = new Date(S.year, S.month - 1, S.day); return d.toLocaleDateString("en-SG", { weekday: "short", day: "numeric", month: "short" }); }
+
+/* ── Compare months: "Richer since January" (chart C, Felix 14 Nov) ─────────────────────────────
+   Mei's earlier months (made up). Jan–Mar are fixed; April is generated exactly like the "30 April" test day, so
+   every figure agrees with what that day shows. Richer by = saved + change in the everyday account. */
+const PAST = {
+  1: { cats: { Food: 760, Transport: 185, Groceries: 270, Misc: 440, Household: 40 }, oneOff: { note: "Phone screen repair", amt: 320 }, moved: 0 },
+  2: { cats: { Food: 820, Transport: 190, Groceries: 290, Misc: 1310, Household: 30 }, oneOff: { note: "New laptop", amt: 1150 }, moved: 200 },
+  3: { cats: { Food: 780, Transport: 195, Groceries: 285, Misc: 690, Household: 35 }, oneOff: { note: "Flight to Bangkok", amt: 420 }, moved: 0 },
+};
+const START = () => sum(PLAN.income.map(x => x.amt)) - sum(PLAN.bills.map(x => x.amt)) - sum(PLAN.saveups.map(x => x.amt)) - sum(PLAN.savings.map(x => x.amt));
+function figuresOf(entries, moved) {
+  const daily = entries.filter(e => e.kind === "expense"), cats = {};
+  daily.forEach(e => cats[e.cat] = (cats[e.cat] || 0) + e.amt);
+  const big = daily.filter(e => e.amt >= PLAN.oneOffAt).sort((a, b) => b.amt - a.amt)[0];
+  return { cats, oneOff: big ? { note: big.note, amt: big.amt } : null, moved };
+}
+/** One month's figures. The current month counts its savings and any overspend so far, but not money not spent yet. */
+function monthFig(m, c, over) {
+  const plan = PLAN.savings[0].amt;
+  if (m === S.month) {
+    const f = figuresOf(state.entries, c.moved);
+    let saved = c.planMoved + c.moved, every = Math.min(0, c.left);
+    if (over && cover === "savings") { saved -= over; every += over; }
+    return { m, saved, every, ...f, soFar: true, paidFromSavings: over && cover === "savings" ? over : 0 };
+  }
+  const f = PAST[m] ? PAST[m] : figuresOf(genMonth(2026, 4, 30, SCENARIOS["end-april"].seed, SCENARIOS["end-april"].extra), 0);
+  const spent = sum(Object.values(f.cats));
+  return { m, saved: plan + f.moved, every: Math.round((START() - spent - f.moved) * 100) / 100, ...f, soFar: false, paidFromSavings: 0 };
+}
+function compareCard(c, over) {
+  const figs = Array.from({ length: S.month }, (_, i) => monthFig(i + 1, c, over));
+  let a = 0, b = 0;
+  const run = figs.map(f => { a += f.saved; b += f.every; return { saved: a, total: a + b }; });
+  const last = run[run.length - 1], everyAll = last.total - last.saved;
+  const lo = Math.min(0, ...run.map(r => r.total), ...run.map(r => r.saved)), hi = Math.max(...run.map(r => r.total), ...run.map(r => r.saved), 1);
+  const W = 340, H = 200, L = 40, R = 14, T = 16, B = 26, n = figs.length;
+  const x = i => n === 1 ? (L + W - R) / 2 : L + i * (W - L - R) / (n - 1);
+  const top = Math.ceil(hi / 1000) * 1000, bot = Math.floor(lo / 1000) * 1000, step = Math.max(1000, Math.ceil((top - bot) / 4000) * 1000);
+  const y = v => T + (top - v) / ((top - bot) || 1) * (H - T - B);
+  const pts = k => run.map((r, i) => `${x(i).toFixed(1)},${y(r[k]).toFixed(1)}`).join(" ");
+  let g = "";
+  for (let v = bot; v <= top; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" class="${v === 0 ? "axis0" : "grid"}"/><text x="${L - 5}" y="${y(v) + 4}" class="tick" text-anchor="end">${v === 0 ? "$0" : `${v < 0 ? "−" : ""}$${Math.abs(v) / 1000}k`}</text>`;
+  figs.forEach((f, i) => g += `<text x="${x(i)}" y="${H - 8}" class="tick" text-anchor="middle">${MON3[f.m - 1]}${f.soFar ? "*" : ""}</text>`);
+  g += `<polygon points="${x(0)},${y(0)} ${pts("saved")} ${x(n - 1)},${y(0)}" class="area-saved"/>`;
+  g += `<polygon points="${pts("saved")} ${run.map((r, i) => `${x(i).toFixed(1)},${y(r.total).toFixed(1)}`).reverse().join(" ")}" class="area-extra"/>`;
+  g += `<polyline points="${pts("saved")}" class="ln-saved"/><polyline points="${pts("total")}" class="ln-total"/>`;
+  figs.forEach((f, i) => {
+    const ranOut = f.every < 0, picked = (pickedMonth ?? defaultPick(figs)) === f.m;
+    if (picked) g += `<line x1="${x(i)}" x2="${x(i)}" y1="${T}" y2="${H - B}" class="pick"/>`;
+    g += `<circle cx="${x(i)}" cy="${y(run[i].total)}" r="${ranOut ? 5.5 : 3.5}" class="${ranOut ? "dot-out" : f.soFar ? "dot-sofar" : "dot"}"/>`;
+  });
+  const richer = last.total;
+  const head = richer >= 0 ? `Since January, Mei is ${fmt0(richer)} richer.` : `Since January, Mei is ${fmt0(-richer)} poorer.`;
+  const sub = `${fmt0(last.saved)} saved · ${fmt0(Math.abs(everyAll))} ${everyAll >= 0 ? "more" : "less"} in her everyday account`;
+  const pick = figs.find(f => f.m === (pickedMonth ?? defaultPick(figs)));
+  const body = `<p class="cmp-head">${head}</p><p class="explain">${sub}.</p>
+    <svg viewBox="0 0 ${W} ${H}" class="cmp-chart" role="img" aria-label="${head} Running total since January: saved, plus extra in the everyday account.">${g}</svg>
+    <p class="legend"><span class="sw sw-saved"></span>Saved <span class="sw sw-extra"></span>Extra in everyday account <span class="sw sw-out"></span>Ran short${figs.some(f => f.soFar) ? " · *so far" : ""}</p>
+    <div class="chips month-chips" role="group" aria-label="Pick a month">${figs.map(f => `<button class="chip small-chip" aria-pressed="${f.m === pick.m}" data-month="${f.m}">${MON3[f.m - 1]}</button>`).join("")}</div>
+    ${monthDetail(pick)}`;
+  return fold("compare", "Richer since January", `<strong class="num">${richer < 0 ? "−" : ""}${fmt0(Math.abs(richer))}</strong>`, body);
+}
+const defaultPick = figs => (figs.length > 1 ? figs[figs.length - 2].m : figs[0].m); // the last finished month
+function monthDetail(f) {
+  const name = MONTHS[f.m - 1] + (f.soFar ? " so far" : "");
+  const richer = f.saved + f.every;
+  const lines = Object.entries(PLAN.limits).map(([cat, lim]) => ({ cat, lim, sp: f.cats[cat] || 0 }));
+  const inLim = sum(lines.map(l => l.sp)), limTot = sum(lines.map(l => l.lim));
+  const over = lines.filter(l => l.sp > l.lim);
+  const outside = Object.entries(f.cats).filter(([cat, v]) => !(cat in PLAN.limits) && v > 0);
+  const bar = (sp, lim) => { const o = sp > lim, w = sp >= lim * 0.8; return `<div class="meter ${o ? "over" : w ? "warn" : ""}"><i style="width:${Math.min(100, sp / lim * 100)}%"></i></div>`; };
+  return `<div class="month-detail"><h3>${name}</h3>
+    <p><strong>${richer >= 0 ? `Mei got richer by ${fmt0(richer)}` : `Mei got poorer by ${fmt0(-richer)}`}:</strong> ${f.paidFromSavings
+      ? `${fmt0(f.saved + f.paidFromSavings)} saved, then ${fmt0(f.paidFromSavings)} taken out of savings`
+      : `${fmt0(f.saved)} saved`}, everyday account ${f.every === 0 ? "unchanged" : `${f.every > 0 ? "up" : "down"} ${fmt0(Math.abs(f.every))}`}.</p>
+    ${(f.every < 0 || f.paidFromSavings) && f.oneOff ? `<p class="why"><strong>Why it ran short:</strong> a ${fmt0(f.oneOff.amt)} one-off, ${esc(f.oneOff.note)}.${f.paidFromSavings ? " Paid from savings." : ""}</p>` : ""}
+    <h4>Spent vs her limits</h4>
+    <p>Spent <strong>${fmt0(inLim)}</strong> of <strong>${fmt0(limTot)}</strong> in her limits${over.length ? "" : ". Every limit kept"}.</p>
+    ${bar(inLim, limTot)}
+    ${over.map(l => `<p class="neg"><strong>${l.cat}: ${fmt0(l.sp - l.lim)} over</strong></p>`).join("")}
+    <div class="rows">${lines.map(l => `<div class="limit"><div class="line"><span>${l.cat}</span><span class="${l.sp > l.lim ? "neg" : ""}">${fmt0(l.sp)} of ${fmt0(l.lim)}</span></div>${bar(l.sp, l.lim)}</div>`).join("")}</div>
+    ${outside.length ? `<p>Outside any limit: <strong>${fmt0(sum(outside.map(o => o[1])))}</strong> (${outside.map(([k, v]) => `${k} ${fmt0(v)}`).join(", ")})</p>` : ""}
+  </div>`;
+}
 
 let openFolds = new Set();
 const fold = (key, label, right, body) => `<details class="card" data-fold="${key}"${openFolds.has(key) ? " open" : ""}><summary><h2>${label}</h2><span class="sum-r">${right}<span class="chev" aria-hidden="true">›</span></span></summary><div class="body">${body}</div></details>`;
@@ -463,6 +565,7 @@ function renderMonth() {
   html += `</section>`;
 
   // Folded cards: tap to open
+  html += compareCard(c, overAtEnd);
   // Yearly bills
   const potTotal = sum(Object.values(potsNow));
   const pots = PLAN.saveups.map(s => { const pot = potsNow[s.name]; const paid = s.due < S.month || (s.due === S.month && state.checklist.due);
@@ -517,6 +620,7 @@ function renderMonth() {
     q("save-not").onclick = () => { promptDone = true; render(); toast("OK. The money stays in your everyday account."); };
   }
   document.querySelectorAll("[data-saveup]").forEach(b => b.onclick = () => toast(`Prototype: this would add "${b.dataset.saveup}" to your yearly bills.`));
+  document.querySelectorAll("[data-month]").forEach(b => b.onclick = () => { pickedMonth = +b.dataset.month; render(); });
   document.querySelectorAll("[data-cover]").forEach(b => b.onclick = () => { cover = cover === b.dataset.cover ? null : b.dataset.cover; render(); });
   if (q("was-oneoff")) q("was-oneoff").onclick = () => toast("OK. It stays in Big one-offs this year; nothing else changes.");
   if (q("pots-yes")) q("pots-yes").onclick = () => toast("Good. Your yearly bills account matches.");
@@ -691,7 +795,15 @@ function go(key) {
   tab = "month"; if (location.hash !== "#" + key) history.replaceState(null, "", "#" + key);
   render(); window.scrollTo(0, 0);
 }
-function fromHash() { const [k, cv] = location.hash.slice(1).split("/"); go(SCENARIOS[k] || k === "setup" ? k : "mid-march"); if (COVERS[cv]) { cover = cv; render(); } }
+function fromHash() {
+  // #end-april/savings picks a "Paid from" answer; any /compare opens Compare months (used for screenshots).
+  const [k, ...rest] = location.hash.slice(1).split("/");
+  go(SCENARIOS[k] || k === "setup" ? k : "mid-march");
+  const cv = rest.find(r => COVERS[r]);
+  if (cv) cover = cv;
+  if (rest.includes("compare")) openFolds.add("compare");
+  if (cv || rest.includes("compare")) { render(); document.querySelector('[data-fold="compare"]')?.scrollIntoView(); }
+}
 window.addEventListener("hashchange", fromHash);
 fromHash();
 </script>
