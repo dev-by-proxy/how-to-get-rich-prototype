@@ -373,12 +373,14 @@ function figuresOf(entries, moved) {
   const big = daily.filter(e => e.amt >= PLAN.oneOffAt).sort((a, b) => b.amt - a.amt)[0];
   return { cats, oneOff: big ? { note: big.note, amt: big.amt } : null, moved };
 }
-/** One month's figures. The current month counts its savings and any overspend so far, but not money not spent yet. */
+/** One month's figures. The current month counts its savings and any overspend so far; unspent money only near month end. */
 function monthFig(m, c, over) {
   const plan = PLAN.savings[0].amt;
   if (m === S.month) {
     const f = figuresOf(state.entries, c.moved);
-    let saved = c.planMoved + c.moved, every = Math.min(0, c.left);
+    // Unspent money counts as extra only from 3 days before month end (when the Save prompt appears), so saving it then
+    // moves it from green to blue without making Mei look richer; mid-month it would overstate (it's meant to be spent).
+    let saved = c.planMoved + c.moved, every = S.day >= c.dim - 3 ? c.left : Math.min(0, c.left);
     if (over && cover === "savings") { saved -= over; every += over; }
     return { m, saved, every, ...f, soFar: true, paidFromSavings: over && cover === "savings" ? over : 0 };
   }
