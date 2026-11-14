@@ -138,6 +138,7 @@ button { font-family: var(--font-body); }
 .over-box .step b { flex: 0 0 auto; }
 .howto { align-self: flex-start; }
 .nowrap { white-space: nowrap; }
+.chip.small-chip { min-height: 36px; padding: 0 var(--s3); font-size: 0.85rem; }
 .over-box .btn-row { margin-top: var(--s1); }
 
 /* Folded cards (tap to open) */
@@ -276,11 +277,13 @@ const SCENARIOS = {
     pots: { "Life insurance": 190, "Property tax": 480, "Income tax": 60, "CNY ang bao": 150 } },
 };
 
-let S = null, state = null, tab = "month", openWorkings = false, promptDone = false, lastSaved = null;
+let S = null, state = null, tab = "month", openWorkings = false, promptDone = false, lastSaved = null, cover = null;
+/* How an overspent month was covered (Felix, 14 Nov). Not answered = everyday account. */
+const COVERS = { everyday: "Everyday account", card: "Credit card", savings: "Savings", pot: "Yearly bills money" };
 function load(key) {
   S = SCENARIOS[key];
   state = { key, entries: genMonth(S.year, S.month, S.day, S.seed, S.extra), checklist: { ...S.checklist }, saved: 0, pots: { ...S.pots } };
-  openWorkings = false; promptDone = false; lastSaved = null; if (typeof openFolds !== "undefined") openFolds.clear();
+  openWorkings = false; promptDone = false; lastSaved = null; cover = null; if (typeof openFolds !== "undefined") openFolds.clear();
 }
 
 /* ── The rules (same as the agreed design) ─────────────────────────────── */
@@ -342,6 +345,11 @@ const fold = (key, label, right, body) => `<details class="card" data-fold="${ke
 function renderMonth() {
   // Month-end prompt shows from 3 days before the last day (agreed rule), e.g. 28–31 May.
   const c = calc(), monthEnd = S.day >= c.dim - 3;
+  // Overspent month: where did the money come from? Adjust what's shown.
+  const overAtEnd = c.left < 0 && c.daysLeft <= 1 ? -c.left : 0;
+  const potsNow = { ...state.pots }; let potHit = null;
+  if (overAtEnd && cover === "savings") c.putAsideYear -= overAtEnd;
+  if (overAtEnd && cover === "pot") { potHit = Object.keys(potsNow).sort((a, b) => potsNow[b] - potsNow[a])[0]; potsNow[potHit] = Math.max(0, potsNow[potHit] - overAtEnd); }
   const savedThisMonth = c.planMoved + c.moved;
   let html = header() + `<div class="monthbar"><h1>${MONTHS[S.month - 1]}</h1><span class="muted">Today: ${dateLabel()}</span></div>`;
 
@@ -379,13 +387,23 @@ function renderMonth() {
       // Last day: lead with the fresh start, show the overspend smaller (round 2: the big red number hid everything else).
       // Kept short (Felix, 14 Nov: the first version was cluttered and its button text too long).
       const shortWhy = b ? `A ${fmt0(b.amt)} ${esc(b.note.replace(/^.*?:\s*/, ""))}.${c.left + b.amt > 0 ? ` Without it, you'd have ${fmt0(c.left + b.amt)} left.` : ""}` : "Spending went past your limits.";
+      const startNext = cover === "card" ? fresh - overAtEnd : fresh;
+      const effect = {
+        null: `Not sure? We'll assume your everyday account: your spare cash went down ${fmt0(overAtEnd)}. Your savings are safe.`,
+        everyday: `Your spare cash (everyday account) went down ${fmt0(overAtEnd)}. Your savings are safe: ${fmt0(c.putAsideYear)} saved this year.`,
+        card: `${fmt(overAtEnd)} goes to paying off the card, so ${next} starts at ${fmt(startNext)}. Pay it off in full so it doesn't grow with interest.`,
+        savings: `Saved this year goes down to ${fmt(c.putAsideYear)}. Try to put it back when you can.`,
+        pot: `Your ${esc(potHit || "")} money went down to ${fmt0(potsNow[potHit] || 0)}, so that bill is now short. Top it up before it's due.`,
+      }[cover];
       html += `<div class="neg" style="font-weight:700">${MONTHS[S.month - 1]} went ${fmt(-c.left)} over</div>
-        <div class="amount num">${fmt(fresh)}</div>
-        <div class="perday"><strong>to spend in ${next}.</strong> A fresh start tomorrow.</div>
+        <div class="amount num">${fmt(startNext)}</div>
+        <div class="perday"><strong>to spend in ${next}.</strong>${cover === "card" ? "" : " A fresh start tomorrow."}</div>
         <div class="over-box"><span><b>Why?</b> ${shortWhy}</span>
-        ${b ? `<span>Save up in case it happens again?</span>
-        <div class="btn-row"><button class="btn inline nowrap" data-saveup="${esc(GROUPS[b.note] || "Other")}">Save ${fmt0(Math.ceil(b.amt / 12))}/month</button><button class="btn secondary inline nowrap" id="was-oneoff">No, one-off</button></div>` : ""}</div>
-        <span class="muted small">Your savings are safe: ${fmt0(c.putAsideYear)} saved this year.</span>`;
+        <span><b>How did you cover the ${fmt0(overAtEnd)}?</b></span>
+        <div class="chips" role="group" aria-label="How did you cover it?">${Object.entries(COVERS).map(([k, v]) => `<button class="chip small-chip" aria-pressed="${cover === k}" data-cover="${k}">${v}</button>`).join("")}</div>
+        <span>${effect}</span>
+        ${b && cover ? `<span>Save up in case it happens again?</span>
+        <div class="btn-row"><button class="btn inline nowrap" data-saveup="${esc(GROUPS[b.note] || "Other")}">Save ${fmt0(Math.ceil(b.amt / 12))}/month</button><button class="btn secondary inline nowrap" id="was-oneoff">No, one-off</button></div>` : ""}</div>`;
     } else {
       html += `<div class="amount num neg">${fmt(-c.left)} over</div>
         <div class="over-box"><div class="step"><b>Why</b><span>${why}</span></div>
@@ -445,8 +463,8 @@ function renderMonth() {
 
   // Folded cards: tap to open
   // Yearly bills
-  const potTotal = sum(Object.values(state.pots));
-  const pots = PLAN.saveups.map(s => { const pot = state.pots[s.name]; const paid = s.due < S.month || (s.due === S.month && state.checklist.due);
+  const potTotal = sum(Object.values(potsNow));
+  const pots = PLAN.saveups.map(s => { const pot = potsNow[s.name]; const paid = s.due < S.month || (s.due === S.month && state.checklist.due);
     const monthsTo = ((s.due - S.month + 12) % 12) || (paid ? 12 : 0);
     const ok = paid || pot + s.amt * monthsTo >= s.yearly;
     return { s, pot, paid, ok, status: paid ? "paid" : pot >= s.yearly ? "ready" : ok ? "on track" : "short" }; });
@@ -498,6 +516,7 @@ function renderMonth() {
     q("save-not").onclick = () => { promptDone = true; render(); toast("OK. The money stays in your everyday account."); };
   }
   document.querySelectorAll("[data-saveup]").forEach(b => b.onclick = () => toast(`Prototype: this would add "${b.dataset.saveup}" to your yearly bills.`));
+  document.querySelectorAll("[data-cover]").forEach(b => b.onclick = () => { cover = cover === b.dataset.cover ? null : b.dataset.cover; render(); });
   if (q("was-oneoff")) q("was-oneoff").onclick = () => toast("OK. It stays in Big one-offs this year; nothing else changes.");
   if (q("pots-yes")) q("pots-yes").onclick = () => toast("Good. Your yearly bills account matches.");
   if (q("pots-no")) q("pots-no").onclick = () => toast("Prototype: this would let you type the real balance and fix it.");
@@ -671,7 +690,7 @@ function go(key) {
   tab = "month"; if (location.hash !== "#" + key) history.replaceState(null, "", "#" + key);
   render(); window.scrollTo(0, 0);
 }
-function fromHash() { const k = location.hash.slice(1); go(SCENARIOS[k] || k === "setup" ? k : "mid-march"); }
+function fromHash() { const [k, cv] = location.hash.slice(1).split("/"); go(SCENARIOS[k] || k === "setup" ? k : "mid-march"); if (COVERS[cv]) { cover = cv; render(); } }
 window.addEventListener("hashchange", fromHash);
 fromHash();
 </script>
