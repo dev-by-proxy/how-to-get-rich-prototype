@@ -274,11 +274,11 @@ const SCENARIOS = {
     pots: { "Life insurance": 190, "Property tax": 480, "Income tax": 60, "CNY ang bao": 150 } },
 };
 
-let S = null, state = null, tab = "month", openWorkings = false, promptDone = false;
+let S = null, state = null, tab = "month", openWorkings = false, promptDone = false, lastSaved = null;
 function load(key) {
   S = SCENARIOS[key];
   state = { key, entries: genMonth(S.year, S.month, S.day, S.seed, S.extra), checklist: { ...S.checklist }, saved: 0, pots: { ...S.pots } };
-  openWorkings = false; promptDone = false; if (typeof openFolds !== "undefined") openFolds.clear();
+  openWorkings = false; promptDone = false; lastSaved = null; if (typeof openFolds !== "undefined") openFolds.clear();
 }
 
 /* ── The rules (same as the agreed design) ─────────────────────────────── */
@@ -296,10 +296,12 @@ function calc() {
   const daysLeft = dim - S.day + 1;
   const perDay = Math.max(0, Math.min(limitsLeft, left)) / daysLeft;
   const putAsidePrev = savings * (S.month - 1) + sum(HISTORY.movedToSavings.filter(m => m.month < S.month).map(m => m.amt));
-  const putAsideYear = putAsidePrev + savings + moved;
+  // This month's savings plan only counts as saved once "Move $300 to your savings account" is ticked.
+  const planMoved = state.checklist.savings ? savings : 0, planToMove = savings - planMoved;
+  const putAsideYear = putAsidePrev + planMoved + moved;
   const kept = left + savings + moved;
   const biggest = daily.filter(e => e.oneOff).sort((a, b) => b.amt - a.amt)[0];
-  return { dim, spent, money, bills, saveup, savings, moved, left, byCat, limitsLeft, spare, daysLeft, perDay, putAsideYear, kept, biggest };
+  return { dim, spent, money, bills, saveup, savings, moved, left, byCat, limitsLeft, spare, daysLeft, perDay, putAsideYear, planMoved, planToMove, kept, biggest };
 }
 function weekCount() {
   const c = PLAN.countLimit, today = new Date(S.year, S.month - 1, S.day);
@@ -338,32 +340,52 @@ const fold = (key, label, right, body) => `<details class="card" data-fold="${ke
 function renderMonth() {
   // Month-end prompt shows from 3 days before the last day (agreed rule), e.g. 28–31 May.
   const c = calc(), monthEnd = S.day >= c.dim - 3;
-  const savedThisMonth = c.savings + c.moved;
+  const savedThisMonth = c.planMoved + c.moved;
   let html = header() + `<div class="monthbar"><h1>${MONTHS[S.month - 1]}</h1><span class="muted">Today: ${dateLabel()}</span></div>`;
 
   // Month-end prompt (only when money is left)
+  // Round 2: saving everything left "$0 a day" for the last days, which alarmed people. Keep enough for the rest of the month.
   if (monthEnd && c.left > 0 && !promptDone) {
-    html += `<section class="card prompt" aria-label="Save what you didn't spend"><h2>Almost month end. You didn't spend ${fmt(c.left)}. Save it?</h2>
-      <p>Tap <strong>Save it</strong> to move ${fmt(c.left)} to your savings account. Saved this year goes up to <strong class="num">${fmt(c.putAsideYear + c.left)}</strong>.</p>
-      <p class="muted">Not now: the money stays in your everyday account.</p>
-      <div class="btn-row"><button class="btn" id="save-all">Save it</button><button class="btn secondary" id="save-some">Save some</button><button class="btn link" id="save-not">Not now</button></div></section>`;
+    const keep = keepForRest(c), saveAmt = Math.round((c.left - keep) * 100) / 100;
+    if (saveAmt > 0) {
+      html += `<section class="card prompt" aria-label="Save what you didn't spend"><h2>Almost month end. Save ${fmt(saveAmt)}?</h2>
+        <p>You have ${fmt(c.left)} left. Save ${fmt(saveAmt)} and keep <strong>${fmt(keep)}</strong> for the last ${c.daysLeft} days (what you usually spend).</p>
+        <p>Saving moves it to your savings account. Saved this year goes up to <strong class="num">${fmt(c.putAsideYear + saveAmt)}</strong>.</p>
+        <p class="muted">Not now: the money stays in your everyday account.</p>
+        <div class="btn-row"><button class="btn" id="save-all" data-amt="${saveAmt}">Save ${fmt0(saveAmt)}</button><button class="btn secondary" id="save-some">Choose an amount</button><button class="btn link" id="save-not">Not now</button></div></section>`;
+    }
+  }
+  if (lastSaved) {
+    html += `<section class="card prompt" aria-label="Saved"><h2>Saved ✓</h2>
+      <p>${fmt(lastSaved.amt)} moved to your savings account. Saved this year is now <strong class="num">${fmt(c.putAsideYear)}</strong>.</p>
+      <p class="muted">You kept ${fmt(c.left)} for the rest of ${MONTHS[S.month - 1]}.</p></section>`;
   }
 
   // Lead card
-  html += `<section class="card lead" aria-label="Left to spend this month"><div class="label"><span>Left to spend this month</span><button type="button" class="info" id="info" aria-expanded="${openWorkings}" aria-label="How is this worked out?">i</button></div>`;
+  const leadLabel = c.left < 0 && c.daysLeft <= 1 ? `${MONTHS[S.month - 1]} is ending` : "Left to spend this month";
+  html += `<section class="card lead" aria-label="Left to spend this month"><div class="label"><span>${leadLabel}</span><button type="button" class="info" id="info" aria-expanded="${openWorkings}" aria-label="How is this worked out?">i</button></div>`;
   if (c.left >= 0) {
     html += `<div class="amount num">${fmt(c.left)}</div>`;
-    html += c.daysLeft > 1 ? `<div class="perday">about <strong class="num">${fmt0(c.perDay)}</strong> a day for the next ${c.daysLeft} days</div>`
+    html += c.daysLeft > 1 ? `<div class="perday">Daily guide: about <strong class="num">${fmt0(c.perDay)}</strong> a day for ${c.daysLeft} days</div>`
                            : `<div class="perday">last day of the month</div>`;
-    html += `<p class="explain">What you can still spend after bills and savings.</p>`;
+    html += `<p class="explain">What you can still spend after bills and savings. The daily guide isn't a limit: spend more one day and less another.</p>`;
   } else {
     const next = MONTHS[S.month % 12], b = c.biggest, fresh = c.money - c.bills - c.saveup - c.savings;
-    html += `<div class="amount num neg">${fmt(-c.left)} over</div>
-      <div class="over-box"><span class="big">${MONTHS[S.month - 1]} went ${fmt(-c.left)} over${b ? ". One big bill caused it." : "."}</span>
-      ${b ? `<div class="step"><b>Why</b><span>${esc(b.note)}, ${fmt(b.amt)}.${c.left + b.amt > 0 ? ` Without it, you'd have had ${fmt(c.left + b.amt)} left.` : ""}</span></div>` : `<div class="step"><b>Why</b><span>Spending went past your limits.</span></div>`}
-      <div class="step"><b>Next</b><span>${next} starts fresh with <strong class="num">${fmt(fresh)}</strong> to spend.</span></div>
-      ${b ? `<div class="step"><b>Tip</b><span>Costs like this can come back. Save about ${fmt0(Math.ceil(b.amt / 12))} a month for them? <button class="btn inline" data-saveup="${esc(GROUPS[b.note] || "Other")}">Save up</button></span></div>` : ""}
-      <span class="muted">Your savings are safe: Saved this year is still ${fmt(c.putAsideYear)}.</span></div>`;
+    const why = b ? `One big bill: ${esc(b.note)}, ${fmt(b.amt)}.${c.left + b.amt > 0 ? ` Without it, you'd have had ${fmt(c.left + b.amt)} left.` : ""}` : "Spending went past your limits.";
+    const tip = b ? `<div class="step"><b>Next time</b><span>Costs like this can come back. <span class="btn-row" style="margin-top:6px"><button class="btn inline" data-saveup="${esc(GROUPS[b.note] || "Other")}">Set aside ${fmt0(Math.ceil(b.amt / 12))} a month for it</button><button class="btn secondary inline" id="was-oneoff">It was a one-off</button></span></span></div>` : "";
+    if (c.daysLeft <= 1) {
+      // Last day: lead with the fresh start, show the overspend smaller (round 2: the big red number hid everything else).
+      html += `<div class="big neg" style="font-weight:700">${MONTHS[S.month - 1]} went ${fmt(-c.left)} over</div>
+        <div class="amount num">${fmt(fresh)}</div>
+        <div class="perday"><strong>to spend in ${next}.</strong> A fresh start tomorrow.</div>
+        <div class="over-box"><div class="step"><b>Why</b><span>${why}</span></div>${tip}
+        <span class="muted">Your savings are safe: Saved this year is still ${fmt(c.putAsideYear)}.</span></div>`;
+    } else {
+      html += `<div class="amount num neg">${fmt(-c.left)} over</div>
+        <div class="over-box"><div class="step"><b>Why</b><span>${why}</span></div>
+        <div class="step"><b>Next</b><span>${next} starts fresh with <strong class="num">${fmt(fresh)}</strong> to spend.</span></div>${tip}
+        <span class="muted">Your savings are safe: Saved this year is still ${fmt(c.putAsideYear)}.</span></div>`;
+    }
   }
   if (openWorkings) {
     html += `<div class="workings" id="workings"><div class="line"><span>Money in</span><span>${fmt(c.money)}</span></div>
@@ -377,8 +399,8 @@ function renderMonth() {
   }
   if (c.left >= 0) {
     html += `<div class="lines">
-      <div class="item"><div class="line"><span>Not planned yet</span><span class="${c.spare < 0 && c.left > 0 ? "neg" : ""}">${c.spare < 0 ? fmt(0) + (c.left > 0 ? " · used up" : "") : fmt(c.spare)}</span></div><span class="explain">Part of Left to spend that isn't in any spending limit. A buffer.</span></div>
-      <div class="item"><div class="line"><span>Saved this year</span><span>${fmt(c.putAsideYear)}</span></div><span class="explain">In your savings account. <span class="pos">+${fmt0(savedThisMonth)} this month</span>.</span></div></div>`;
+      <div class="item"><div class="line"><span>Not planned yet</span><span class="${c.spare < 0 && c.left > 0 && !lastSaved ? "neg" : ""}">${c.spare < 0 ? fmt(0) + (c.left > 0 && !lastSaved ? " · used up" : "") : fmt(c.spare)}</span></div><span class="explain">Part of Left to spend that isn't in any spending limit. A buffer.</span></div>
+      <div class="item"><div class="line"><span>Saved this year</span><span>${fmt(c.putAsideYear)}</span></div><span class="explain">In your savings account. ${savedThisMonth ? `<span class="pos">+${fmt0(savedThisMonth)} this month</span>` : "Nothing saved yet this month"}${c.planToMove ? ` · <strong>${fmt0(c.planToMove)} still to move</strong> (see Still to do)` : ""}.</span></div></div>`;
   }
   html += `<button type="button" class="btn link howto small" id="howto">New here? How this screen works</button></section>`;
 
@@ -430,10 +452,11 @@ function renderMonth() {
     <p class="muted">Does your yearly bills account show ${fmt(potTotal)}?</p><div class="btn-row"><button class="btn inline" id="pots-yes">Yes</button><button class="btn secondary inline" id="pots-no">No</button></div>`);
 
   // Saved this year
-  const planSoFar = PLAN.savings[0].amt * S.month;
+  const planSoFar = PLAN.savings[0].amt * (S.month - 1) + c.planMoved;
   html += fold("saved", "Saved this year", `<strong class="num">${fmt(c.putAsideYear)}</strong>`,
     `<div class="line"><span>Savings plan (${fmt0(PLAN.savings[0].amt)} a month)</span><span>${fmt(planSoFar)}</span></div>
     <div class="line"><span>Extra you saved</span><span>${fmt(c.putAsideYear - planSoFar)}</span></div>
+    ${c.planToMove ? `<div class="line"><span>Still to move this month</span><span>${fmt(c.planToMove)}</span></div>` : ""}
     <p class="explain">Money in your savings account. Money you don't spend stays in your everyday account until you save it (near month end the app asks).</p>`);
 
   // Big one-offs
@@ -464,18 +487,19 @@ function renderMonth() {
     el.onclick = toggle; el.onkeydown = e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggle(); } };
   });
   if (q("save-all")) {
-    q("save-all").onclick = () => saveAmount(calc().left);
+    q("save-all").onclick = () => saveAmount(parseFloat(q("save-all").dataset.amt));
     q("save-some").onclick = () => sheetSaveSome();
     q("save-not").onclick = () => { promptDone = true; render(); toast("OK. The money stays in your everyday account."); };
   }
   document.querySelectorAll("[data-saveup]").forEach(b => b.onclick = () => toast(`Prototype: this would add "${b.dataset.saveup}" to your yearly bills.`));
+  if (q("was-oneoff")) q("was-oneoff").onclick = () => toast("OK. It stays in Big one-offs this year; nothing else changes.");
   if (q("pots-yes")) q("pots-yes").onclick = () => toast("Good. Your yearly bills account matches.");
   if (q("pots-no")) q("pots-no").onclick = () => toast("Prototype: this would let you type the real balance and fix it.");
 }
 function howtoSheet() {
   openSheet(`<h2>How this screen works</h2>
     <p><strong>Left to spend this month</strong>: your pay, minus bills, savings and what you've spent. Above $0 means you're fine.</p>
-    <p><strong>About $X a day</strong>: what you can spend each day and stay inside your limits.</p>
+    <p><strong>Daily guide</strong>: roughly what you can spend each day and stay inside your limits. It's a guide, not a rule: a $60 dinner is fine if you spend less on other days.</p>
     <p><strong>Not planned yet</strong>: money no spending limit has claimed. Keep it as a buffer, or save it at month end.</p>
     <p><strong>Saved this year</strong>: money you've moved to your savings account. It only goes up when you save.</p>
     <p><strong>Still to do</strong>: money moves to make this month. Tick them when done.</p>
@@ -486,9 +510,11 @@ function howtoSheet() {
 function saveAmount(a) {
   a = Math.round(a * 100) / 100; if (!(a > 0)) return;
   state.entries.push({ id: "s" + Date.now(), day: S.day, cat: null, amt: a, note: "Moved to savings", kind: "saved" });
-  promptDone = true; render(); toast(`Saved ${fmt(a)}. Saved this year: ${fmt(calc().putAsideYear)} ▲`);
-  document.querySelector('[aria-label="Left to spend this month"]')?.classList.add("glow");
+  promptDone = true; lastSaved = { amt: a }; render(); window.scrollTo(0, 0);
+  document.querySelector('[aria-label="Saved"]')?.classList.add("glow");
 }
+/* What to keep for the rest of the month: your usual daily spending so far, rounded up to $10. */
+function keepForRest(c) { return Math.min(c.left, Math.ceil(c.spent / S.day * c.daysLeft / 10) * 10); }
 
 function renderLog() {
   const c = calc();
