@@ -140,6 +140,7 @@ button { font-family: var(--font-body); }
 .nowrap { white-space: nowrap; }
 .chip.small-chip { min-height: 36px; padding: 0 var(--s3); font-size: 0.85rem; }
 .over-box .btn-row { margin-top: var(--s1); }
+.over-box .chips { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s2); }
 
 /* Folded cards (tap to open) */
 details.card { gap: 0; }
@@ -279,7 +280,7 @@ const SCENARIOS = {
 
 let S = null, state = null, tab = "month", openWorkings = false, promptDone = false, lastSaved = null, cover = null;
 /* How an overspent month was covered (Felix, 14 Nov). Not answered = everyday account. */
-const COVERS = { everyday: "Everyday account", card: "Credit card", savings: "Savings", pot: "Yearly bills money" };
+const COVERS = { everyday: "Everyday account", card: "Credit card", savings: "Savings", pot: "Bills pot" };
 function load(key) {
   S = SCENARIOS[key];
   state = { key, entries: genMonth(S.year, S.month, S.day, S.seed, S.extra), checklist: { ...S.checklist }, saved: 0, pots: { ...S.pots } };
@@ -372,7 +373,7 @@ function renderMonth() {
   }
 
   // Lead card
-  const leadLabel = c.left < 0 && c.daysLeft <= 1 ? `${MONTHS[S.month - 1]} is ending` : "Left to spend this month";
+  const leadLabel = c.left < 0 && c.daysLeft <= 1 ? `<span class="neg">${MONTHS[S.month - 1]} went ${fmt(-c.left)} over</span>` : "Left to spend this month";
   html += `<section class="card lead" aria-label="Left to spend this month"><div class="label"><span>${leadLabel}</span><button type="button" class="info" id="info" aria-expanded="${openWorkings}" aria-label="How is this worked out?">i</button></div>`;
   if (c.left >= 0) {
     html += `<div class="amount num">${fmt(c.left)}</div>`;
@@ -386,23 +387,23 @@ function renderMonth() {
     if (c.daysLeft <= 1) {
       // Last day: lead with the fresh start, show the overspend smaller (round 2: the big red number hid everything else).
       // Kept short (Felix, 14 Nov: the first version was cluttered and its button text too long).
-      const shortWhy = b ? `A ${fmt0(b.amt)} ${esc(b.note.replace(/^.*?:\s*/, ""))}.${c.left + b.amt > 0 ? ` Without it, you'd have ${fmt0(c.left + b.amt)} left.` : ""}` : "Spending went past your limits.";
+      // Short on purpose (Felix, 14 Nov): every line earns its place.
+      const shortWhy = b ? `A ${fmt0(b.amt)} ${esc(b.note.replace(/^.*?:\s*/, ""))}.${c.left + b.amt > 0 ? ` Without it you'd be ${fmt0(c.left + b.amt)} up.` : ""}` : "Spending went past your limits.";
       const startNext = cover === "card" ? fresh - overAtEnd : fresh;
       const effect = {
-        null: `Not sure? We'll assume your everyday account: your spare cash went down ${fmt0(overAtEnd)}. Your savings are safe.`,
-        everyday: `Your spare cash (everyday account) went down ${fmt0(overAtEnd)}. Your savings are safe: ${fmt0(c.putAsideYear)} saved this year.`,
-        card: `${fmt(overAtEnd)} goes to paying off the card, so ${next} starts at ${fmt(startNext)}. Pay it off in full so it doesn't grow with interest.`,
-        savings: `Saved this year goes down to ${fmt(c.putAsideYear)}. Try to put it back when you can.`,
-        pot: `Your ${esc(potHit || "")} money went down to ${fmt0(potsNow[potHit] || 0)}, so that bill is now short. Top it up before it's due.`,
+        null: `Not sure? We'll assume your everyday account. Savings untouched.`,
+        everyday: `Your everyday account is ${fmt0(overAtEnd)} lower. Savings untouched.`,
+        card: `${next} is ${fmt0(overAtEnd)} less, to pay off the card. Pay it in full.`,
+        savings: `Saved this year is now ${fmt0(c.putAsideYear)}. Top it up when you can.`,
+        pot: `${esc(potHit || "")} pot is now ${fmt0(potsNow[potHit] || 0)}: short. Top it up before it's due.`,
       }[cover];
-      html += `<div class="neg" style="font-weight:700">${MONTHS[S.month - 1]} went ${fmt(-c.left)} over</div>
-        <div class="amount num">${fmt(startNext)}</div>
-        <div class="perday"><strong>to spend in ${next}.</strong>${cover === "card" ? "" : " A fresh start tomorrow."}</div>
+      html += `<div class="amount num">${fmt(startNext)}</div>
+        <div class="perday"><strong>to spend in ${next}.</strong></div>
         <div class="over-box"><span><b>Why?</b> ${shortWhy}</span>
-        <span><b>How did you cover the ${fmt0(overAtEnd)}?</b></span>
-        <div class="chips" role="group" aria-label="How did you cover it?">${Object.entries(COVERS).map(([k, v]) => `<button class="chip small-chip" aria-pressed="${cover === k}" data-cover="${k}">${v}</button>`).join("")}</div>
-        <span>${effect}</span>
-        ${b && cover ? `<span>Save up in case it happens again?</span>
+        <span><b>Paid from:</b></span>
+        <div class="chips" role="group" aria-label="Paid from">${Object.entries(COVERS).map(([k, v]) => `<button class="chip small-chip" aria-pressed="${cover === k}" data-cover="${k}">${v}</button>`).join("")}</div>
+        <span class="muted">${effect}</span>
+        ${b && cover ? `<span><b>Save for next time?</b></span>
         <div class="btn-row"><button class="btn inline nowrap" data-saveup="${esc(GROUPS[b.note] || "Other")}">Save ${fmt0(Math.ceil(b.amt / 12))}/month</button><button class="btn secondary inline nowrap" id="was-oneoff">No, one-off</button></div>` : ""}</div>`;
     } else {
       html += `<div class="amount num neg">${fmt(-c.left)} over</div>
