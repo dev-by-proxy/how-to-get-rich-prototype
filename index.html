@@ -234,7 +234,6 @@ const PLAN = {
   ],
   limits: { "Food": 800, "Transport": 200, "Groceries": 300, "Misc": 350 },
   noLimit: ["Household"],
-  countLimit: { cat: "Food", over: 40, perWeek: 2, label: "Nice meals over $40" },
   oneOffAt: 250,
 };
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -326,11 +325,6 @@ function calc() {
   const kept = left + savings + moved;
   const biggest = daily.filter(e => e.oneOff).sort((a, b) => b.amt - a.amt)[0];
   return { dim, spent, money, bills, saveup, savings, moved, left, byCat, limitsLeft, spare, daysLeft, perDay, putAsideYear, planMoved, planToMove, kept, biggest };
-}
-function weekCount() {
-  const c = PLAN.countLimit, today = new Date(S.year, S.month - 1, S.day);
-  const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  return state.entries.filter(e => e.cat === c.cat && e.kind === "expense" && e.amt > c.over && e.amt < PLAN.oneOffAt && new Date(S.year, S.month - 1, e.day) >= monday).length;
 }
 function oneOffsThisYear() {
   const items = HISTORY.oneOffs.filter(o => o.month < S.month).concat(
@@ -557,10 +551,8 @@ function renderMonth() {
     html += `<div class="limit"><div class="line"><strong>${cat}</strong><span>${fmt(sp)} of ${fmt0(lim)}</span></div>
       <div class="meter ${over ? "over" : warn ? "warn" : ""}" role="meter" aria-valuemin="0" aria-valuemax="${lim}" aria-valuenow="${Math.round(sp)}" aria-label="${cat} spent"><i style="width:${pct}%"></i></div>
       <div class="line small"><span class="muted"></span><span class="${over ? "neg" : ""}">${over ? fmt(sp - lim) + " over" : fmt(lim - sp) + " left"}</span></div>`;
-    if (PLAN.countLimit.cat === cat) {
-      const n = weekCount(), lim2 = PLAN.countLimit.perWeek;
-      html += `<div class="count">Nice meals over $${PLAN.countLimit.over} <strong>this week</strong>: <strong>${n} of ${lim2}</strong> used${n < lim2 ? ` · ${lim2 - n} left this week` : n === lim2 ? " · none left this week" : " · over"}</div>`;
-    }
+    // No "nice meals a week" count (Felix, 14 Nov): people decide from what's left in the limit; going over uses Not
+    // planned yet, and a month that runs out asks "Paid from:".
     html += `</div>`;
   });
   PLAN.noLimit.forEach(cat => { if (c.byCat[cat]) html += `<div class="limit"><div class="line"><strong>${cat}</strong><span>${fmt(c.byCat[cat])} · no limit</span></div></div>`; });
@@ -706,7 +698,7 @@ function renderBudget() {
     block("Monthly bills", PLAN.bills.map(x => [x.name, x.amt])) +
     block("Savings", PLAN.savings.map(x => [x.name, x.amt, "Comes off the top. Counts towards Saved this year."])) +
     block("Yearly bills (set aside each month)", PLAN.saveups.map(x => [x.name, x.amt, `${fmt0(x.yearly)} a year, due ${MONTHS[x.due - 1]}`])) +
-    block("Spending limits", Object.entries(PLAN.limits).map(([k, v]) => [k, v, k === "Food" ? "Also: nice meals over $40, 2 a week" : ""])) +
+    block("Spending limits", Object.entries(PLAN.limits).map(([k, v]) => [k, v, ""])) +
     `<section class="card lead"><div class="line"><strong>Not planned yet</strong><strong class="num">${fmt(spareStart)}</strong></div>
      <p class="muted">Money no spending limit has claimed: a buffer for the month. Near month end the app offers to save whatever you didn't spend.</p></section>`;
   bindCommon();
