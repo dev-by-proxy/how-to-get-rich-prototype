@@ -137,6 +137,8 @@ button { font-family: var(--font-body); }
 .over-box .step { display: flex; gap: var(--s2); align-items: baseline; }
 .over-box .step b { flex: 0 0 auto; }
 .howto { align-self: flex-start; }
+.nowrap { white-space: nowrap; }
+.over-box .btn-row { margin-top: var(--s1); }
 
 /* Folded cards (tap to open) */
 details.card { gap: 0; }
@@ -375,11 +377,15 @@ function renderMonth() {
     const tip = b ? `<div class="step"><b>Next time</b><span>Costs like this can come back. <span class="btn-row" style="margin-top:6px"><button class="btn inline" data-saveup="${esc(GROUPS[b.note] || "Other")}">Set aside ${fmt0(Math.ceil(b.amt / 12))} a month for it</button><button class="btn secondary inline" id="was-oneoff">It was a one-off</button></span></span></div>` : "";
     if (c.daysLeft <= 1) {
       // Last day: lead with the fresh start, show the overspend smaller (round 2: the big red number hid everything else).
-      html += `<div class="big neg" style="font-weight:700">${MONTHS[S.month - 1]} went ${fmt(-c.left)} over</div>
+      // Kept short (Felix, 14 Nov: the first version was cluttered and its button text too long).
+      const shortWhy = b ? `A ${fmt0(b.amt)} ${esc(b.note.replace(/^.*?:\s*/, ""))}.${c.left + b.amt > 0 ? ` Without it, you'd have ${fmt0(c.left + b.amt)} left.` : ""}` : "Spending went past your limits.";
+      html += `<div class="neg" style="font-weight:700">${MONTHS[S.month - 1]} went ${fmt(-c.left)} over</div>
         <div class="amount num">${fmt(fresh)}</div>
         <div class="perday"><strong>to spend in ${next}.</strong> A fresh start tomorrow.</div>
-        <div class="over-box"><div class="step"><b>Why</b><span>${why}</span></div>${tip}
-        <span class="muted">Your savings are safe: Saved this year is still ${fmt(c.putAsideYear)}.</span></div>`;
+        <div class="over-box"><span><b>Why?</b> ${shortWhy}</span>
+        ${b ? `<span>Save up in case it happens again?</span>
+        <div class="btn-row"><button class="btn inline nowrap" data-saveup="${esc(GROUPS[b.note] || "Other")}">Save ${fmt0(Math.ceil(b.amt / 12))}/month</button><button class="btn secondary inline nowrap" id="was-oneoff">No, one-off</button></div>` : ""}</div>
+        <span class="muted small">Your savings are safe: ${fmt0(c.putAsideYear)} saved this year.</span>`;
     } else {
       html += `<div class="amount num neg">${fmt(-c.left)} over</div>
         <div class="over-box"><div class="step"><b>Why</b><span>${why}</span></div>
