@@ -131,6 +131,24 @@ button { font-family: var(--font-body); }
 /* Prompt (month-end) */
 .prompt { background: var(--positive-wash); border-color: var(--positive); }
 .prompt h2 { font-size: 1.1rem; }
+.explain { font-size: 0.78rem; color: var(--muted); margin-top: -2px; }
+.lead .lines .item { display: flex; flex-direction: column; }
+.over-box .big { font-weight: 700; font-size: 1.05rem; }
+.over-box .step { display: flex; gap: var(--s2); align-items: baseline; }
+.over-box .step b { flex: 0 0 auto; }
+.howto { align-self: flex-start; }
+
+/* Folded cards (tap to open) */
+details.card { gap: 0; }
+details.card > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: var(--s2); min-height: 44px; }
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary h2 { font-size: 1rem; }
+details.card > summary .sum-r { display: flex; align-items: center; gap: var(--s2); white-space: nowrap; }
+details.card > summary .chev { transition: transform 0.15s; }
+details.card[open] > summary .chev { transform: rotate(90deg); }
+details.card[open] > summary { margin-bottom: var(--s3); }
+details.card > .body { display: flex; flex-direction: column; gap: var(--s3); }
+details.card > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 8px; }
 
 /* Log */
 .seg { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--s1); background: var(--paper-3); border-radius: var(--r-pill); padding: var(--s1); }
@@ -260,7 +278,7 @@ let S = null, state = null, tab = "month", openWorkings = false, promptDone = fa
 function load(key) {
   S = SCENARIOS[key];
   state = { key, entries: genMonth(S.year, S.month, S.day, S.seed, S.extra), checklist: { ...S.checklist }, saved: 0, pots: { ...S.pots } };
-  openWorkings = false; promptDone = false;
+  openWorkings = false; promptDone = false; if (typeof openFolds !== "undefined") openFolds.clear();
 }
 
 /* ── The rules (same as the agreed design) ─────────────────────────────── */
@@ -314,57 +332,71 @@ function header() {
 }
 function dateLabel() { const d = new Date(S.year, S.month - 1, S.day); return d.toLocaleDateString("en-SG", { weekday: "short", day: "numeric", month: "short" }); }
 
+let openFolds = new Set();
+const fold = (key, label, right, body) => `<details class="card" data-fold="${key}"${openFolds.has(key) ? " open" : ""}><summary><h2>${label}</h2><span class="sum-r">${right}<span class="chev" aria-hidden="true">›</span></span></summary><div class="body">${body}</div></details>`;
+
 function renderMonth() {
-  const c = calc(), monthEnd = S.day >= c.dim - 2;
+  // Month-end prompt shows from 3 days before the last day (agreed rule), e.g. 28–31 May.
+  const c = calc(), monthEnd = S.day >= c.dim - 3;
+  const savedThisMonth = c.savings + c.moved;
   let html = header() + `<div class="monthbar"><h1>${MONTHS[S.month - 1]}</h1><span class="muted">Today: ${dateLabel()}</span></div>`;
 
-  // Month-end prompt (from 3 days before the end, only when money is left)
+  // Month-end prompt (only when money is left)
   if (monthEnd && c.left > 0 && !promptDone) {
-    html += `<section class="card prompt" aria-label="Save what's left"><h2>Almost month end, and you didn't spend ${fmt(c.left)}. Save it?</h2>
-      <p class="muted">Saving it adds to Put aside. You can also save part of it.</p>
+    html += `<section class="card prompt" aria-label="Save what you didn't spend"><h2>Almost month end. You didn't spend ${fmt(c.left)}. Save it?</h2>
+      <p>Tap <strong>Save it</strong> to move ${fmt(c.left)} to your savings account. Saved this year goes up to <strong class="num">${fmt(c.putAsideYear + c.left)}</strong>.</p>
+      <p class="muted">Not now: the money stays in your everyday account.</p>
       <div class="btn-row"><button class="btn" id="save-all">Save it</button><button class="btn secondary" id="save-some">Save some</button><button class="btn link" id="save-not">Not now</button></div></section>`;
   }
 
   // Lead card
-  html += `<section class="card lead" aria-label="Left to spend"><div class="label"><span>Left to spend</span><button type="button" class="info" id="info" aria-expanded="${openWorkings}" aria-label="How is this worked out?">i</button></div>`;
+  html += `<section class="card lead" aria-label="Left to spend this month"><div class="label"><span>Left to spend this month</span><button type="button" class="info" id="info" aria-expanded="${openWorkings}" aria-label="How is this worked out?">i</button></div>`;
   if (c.left >= 0) {
     html += `<div class="amount num">${fmt(c.left)}</div>`;
     html += c.daysLeft > 1 ? `<div class="perday">about <strong class="num">${fmt0(c.perDay)}</strong> a day for the next ${c.daysLeft} days</div>`
                            : `<div class="perday">last day of the month</div>`;
+    html += `<p class="explain">What you can still spend after bills and savings.</p>`;
   } else {
-    const next = MONTHS[S.month % 12];
+    const next = MONTHS[S.month % 12], b = c.biggest, fresh = c.money - c.bills - c.saveup - c.savings;
     html += `<div class="amount num neg">${fmt(-c.left)} over</div>
-      <div class="over-box"><strong>This month went ${fmt(-c.left)} past what came in.</strong>
-      ${c.biggest ? `<span>Biggest one-off: ${esc(c.biggest.note)}, ${fmt(c.biggest.amt)}</span>` : ""}
-      <span>${next} starts fresh at ${fmt(c.money - c.bills - c.saveup - c.savings)}.</span></div>`;
+      <div class="over-box"><span class="big">${MONTHS[S.month - 1]} went ${fmt(-c.left)} over${b ? ". One big bill caused it." : "."}</span>
+      ${b ? `<div class="step"><b>Why</b><span>${esc(b.note)}, ${fmt(b.amt)}.${c.left + b.amt > 0 ? ` Without it, you'd have had ${fmt(c.left + b.amt)} left.` : ""}</span></div>` : `<div class="step"><b>Why</b><span>Spending went past your limits.</span></div>`}
+      <div class="step"><b>Next</b><span>${next} starts fresh with <strong class="num">${fmt(fresh)}</strong> to spend.</span></div>
+      ${b ? `<div class="step"><b>Tip</b><span>Costs like this can come back. Save about ${fmt0(Math.ceil(b.amt / 12))} a month for them? <button class="btn inline" data-saveup="${esc(GROUPS[b.note] || "Other")}">Save up</button></span></div>` : ""}
+      <span class="muted">Your savings are safe: Saved this year is still ${fmt(c.putAsideYear)}.</span></div>`;
   }
   if (openWorkings) {
     html += `<div class="workings" id="workings"><div class="line"><span>Money in</span><span>${fmt(c.money)}</span></div>
       <div class="line"><span>− Monthly bills</span><span>${fmt(c.bills)}</span></div>
-      <div class="line"><span>− Bills you save up for</span><span>${fmt(c.saveup)}</span></div>
-      <div class="line"><span>− Savings</span><span>${fmt(c.savings)}</span></div>
+      <div class="line"><span>− Yearly bills (set aside monthly)</span><span>${fmt(c.saveup)}</span></div>
+      <div class="line"><span>− Savings plan</span><span>${fmt(c.savings)}</span></div>
       <div class="line"><span>− Spent so far</span><span>${fmt(c.spent)}</span></div>
-      ${c.moved ? `<div class="line"><span>− Moved to savings</span><span>${fmt(c.moved)}</span></div>` : ""}
+      ${c.moved ? `<div class="line"><span>− Extra saved</span><span>${fmt(c.moved)}</span></div>` : ""}
       <div class="line total"><span>Left to spend</span><span>${fmt(c.left)}</span></div>
-      <p class="muted small">The per-day figure only counts what's left in your spending limits (${fmt(c.limitsLeft)}), not Spare.</p></div>`;
+      <p class="muted small">The per-day figure only counts what's left in your spending limits (${fmt(c.limitsLeft)}).</p></div>`;
   }
-  html += `<div class="lines"><div class="line"><span>Spare (not in any limit)</span><span class="${c.spare < 0 ? "neg" : ""}">${c.spare < 0 ? fmt(0) + " · used up" : fmt(c.spare)}</span></div>
-    <div class="line"><span>Put aside this year</span><span>${fmt(c.putAsideYear)} <span class="pos">▲ ${fmt0(c.savings + c.moved)}</span></span></div></div></section>`;
+  if (c.left >= 0) {
+    html += `<div class="lines">
+      <div class="item"><div class="line"><span>Not planned yet</span><span class="${c.spare < 0 && c.left > 0 ? "neg" : ""}">${c.spare < 0 ? fmt(0) + (c.left > 0 ? " · used up" : "") : fmt(c.spare)}</span></div><span class="explain">Part of Left to spend that isn't in any spending limit. A buffer.</span></div>
+      <div class="item"><div class="line"><span>Saved this year</span><span>${fmt(c.putAsideYear)}</span></div><span class="explain">In your savings account. <span class="pos">+${fmt0(savedThisMonth)} this month</span>.</span></div></div>`;
+  }
+  html += `<button type="button" class="btn link howto small" id="howto">New here? How this screen works</button></section>`;
 
-  // Checklist
+  // Still to do
   const ck = state.checklist, dueBill = PLAN.saveups.find(s => s.due === S.month);
   const items = [
     ["salary", "Salary arrived", ""],
-    ["bills", `Move ${fmt(c.saveup)} to your bills account`, `${PLAN.saveups.length} pots: ${PLAN.saveups.map(s => s.name).join(", ")}`],
-    ["savings", `${PLAN.savings[0].name}: ${fmt(PLAN.savings[0].amt)}`, "Move it to your savings account"],
+    ["bills", `Move ${fmt(c.saveup)} to your yearly bills account`, `For ${PLAN.saveups.map(s => s.name).join(", ")}`],
+    ["savings", `Move ${fmt(PLAN.savings[0].amt)} to your savings account`, "Your monthly savings plan"],
   ];
-  if (dueBill) items.push(["due", `Pay ${dueBill.name} ${fmt(dueBill.yearly)} from your bills account`, "Due this month. It's already saved, so it doesn't change Left to spend."]);
+  if (dueBill) items.push(["due", `Pay ${dueBill.name} ${fmt(dueBill.yearly)} from your yearly bills account`, "Due this month. It's already set aside, so it doesn't change Left to spend."]);
   const doneN = items.filter(i => ck[i[0]]).length;
   if (doneN < items.length) {
-    html += `<section class="card" aria-label="This month's checklist"><div class="card-head"><h2>This month's checklist</h2><span class="muted">${doneN} of ${items.length} done</span></div>
-      ${items.map(([k, t, s]) => `<div class="check ${ck[k] ? "done" : ""}" role="checkbox" tabindex="0" aria-checked="${!!ck[k]}" data-check="${k}"><span class="box" aria-hidden="true">${ck[k] ? "✓" : ""}</span><span><span class="text">${esc(t)}</span>${s ? `<br><span class="sub">${esc(s)}</span>` : ""}</span></div>`).join("")}</section>`;
+    html += `<section class="card" aria-label="Still to do this month"><div class="card-head"><h2>Still to do this month</h2><span class="muted">${doneN} of ${items.length} done</span></div>
+      ${items.map(([k, t, s]) => `<div class="check ${ck[k] ? "done" : ""}" role="checkbox" tabindex="0" aria-checked="${!!ck[k]}" data-check="${k}"><span class="box" aria-hidden="true">${ck[k] ? "✓" : ""}</span><span><span class="text">${esc(t)}</span>${s ? `<br><span class="sub">${esc(s)}</span>` : ""}</span></div>`).join("")}
+      <p class="explain">Tick each one when you've done it in your bank app.</p></section>`;
   } else {
-    html += `<section class="card flat" aria-label="This month's checklist"><div class="card-head"><h2>Checklist done ✓</h2><span class="muted">${items.length} of ${items.length}</span></div></section>`;
+    html += `<section class="card flat" aria-label="Still to do this month"><div class="card-head"><h2>All done this month ✓</h2><span class="muted">${items.length} of ${items.length}</span></div></section>`;
   }
 
   // Spending limits
@@ -374,71 +406,88 @@ function renderMonth() {
     html += `<div class="limit"><div class="line"><strong>${cat}</strong><span>${fmt(sp)} of ${fmt0(lim)}</span></div>
       <div class="meter ${over ? "over" : warn ? "warn" : ""}" role="meter" aria-valuemin="0" aria-valuemax="${lim}" aria-valuenow="${Math.round(sp)}" aria-label="${cat} spent"><i style="width:${pct}%"></i></div>
       <div class="line small"><span class="muted"></span><span class="${over ? "neg" : ""}">${over ? fmt(sp - lim) + " over" : fmt(lim - sp) + " left"}</span></div>`;
-    if (PLAN.countLimit.cat === cat) { const n = weekCount(); html += `<div class="count">${PLAN.countLimit.label}: <strong>${n}</strong> this week (your limit: ${PLAN.countLimit.perWeek})${n > PLAN.countLimit.perWeek ? " · over" : ""}</div>`; }
+    if (PLAN.countLimit.cat === cat) {
+      const n = weekCount(), lim2 = PLAN.countLimit.perWeek;
+      html += `<div class="count">Nice meals over $${PLAN.countLimit.over} <strong>this week</strong>: <strong>${n} of ${lim2}</strong> used${n < lim2 ? ` · ${lim2 - n} left this week` : n === lim2 ? " · none left this week" : " · over"}</div>`;
+    }
     html += `</div>`;
   });
   PLAN.noLimit.forEach(cat => { if (c.byCat[cat]) html += `<div class="limit"><div class="line"><strong>${cat}</strong><span>${fmt(c.byCat[cat])} · no limit</span></div></div>`; });
   html += `</section>`;
 
+  // Folded cards: tap to open
+  // Yearly bills
+  const potTotal = sum(Object.values(state.pots));
+  const pots = PLAN.saveups.map(s => { const pot = state.pots[s.name]; const paid = s.due < S.month || (s.due === S.month && state.checklist.due);
+    const monthsTo = ((s.due - S.month + 12) % 12) || (paid ? 12 : 0);
+    const ok = paid || pot + s.amt * monthsTo >= s.yearly;
+    return { s, pot, paid, ok, status: paid ? "paid" : pot >= s.yearly ? "ready" : ok ? "on track" : "short" }; });
+  const shortN = pots.filter(p => !p.ok).length;
+  html += fold("bills", "Yearly bills", shortN ? `<span class="tag plain">${shortN} short</span>` : `<span class="tag good">All covered</span>`,
+    `<p class="explain">Bills that come once a year. You set aside ${fmt(c.saveup)} a month so they're paid for when they're due.</p>
+    <div class="rows">${pots.map(p => `<div class="row"><span><strong>${p.s.name}</strong><br><span class="muted small">${fmt0(p.s.yearly)} a year · ${p.paid ? "paid in " + MON3[p.s.due - 1] + ", refilling" : "due " + MONTHS[p.s.due - 1]}</span></span><span class="r">${fmt0(p.pot)} set aside</span><span class="r"><span class="tag ${p.ok ? "good" : "plain"}">${p.status}</span></span></div>`).join("")}</div>
+    <div class="line"><span>Total set aside</span><strong class="num">${fmt(potTotal)}</strong></div>
+    <p class="muted">Does your yearly bills account show ${fmt(potTotal)}?</p><div class="btn-row"><button class="btn inline" id="pots-yes">Yes</button><button class="btn secondary inline" id="pots-no">No</button></div>`);
+
+  // Saved this year
+  const planSoFar = PLAN.savings[0].amt * S.month;
+  html += fold("saved", "Saved this year", `<strong class="num">${fmt(c.putAsideYear)}</strong>`,
+    `<div class="line"><span>Savings plan (${fmt0(PLAN.savings[0].amt)} a month)</span><span>${fmt(planSoFar)}</span></div>
+    <div class="line"><span>Extra you saved</span><span>${fmt(c.putAsideYear - planSoFar)}</span></div>
+    <p class="explain">Money in your savings account. Money you don't spend stays in your everyday account until you save it (near month end the app asks).</p>`);
+
   // Big one-offs
   const oo = oneOffsThisYear();
-  html += `<section class="card" aria-label="Big one-offs this year"><div class="card-head"><h2>Big one-offs this year</h2><span class="num"><strong>${fmt(oo.total)}</strong></span></div>
-    <p class="muted">Single expenses of ${fmt0(PLAN.oneOffAt)} or more.</p><div class="rows">`;
+  let ooRows = "";
   Object.entries(oo.groups).sort((a, b) => b[1].amt - a[1].amt).forEach(([g, v]) => {
-    html += `<div class="row"><span><strong>${esc(g)}</strong><br><span class="muted small">${v.items.map(i => esc(i.note) + " (" + MON3[i.month - 1] + ")").join(", ")}</span></span><span class="r">${v.n} item${v.n > 1 ? "s" : ""}</span><span class="r">${fmt(v.amt)}</span></div>`;
-    if (v.n >= 2) html += `<div class="row"><span class="muted small">Came back ${v.n} times. Save up about ${fmt0(v.amt / 12)} a month for this?</span><span></span><span class="r"><button class="btn inline" data-saveup="${esc(g)}">Save up</button></span></div>`;
+    ooRows += `<div class="row"><span><strong>${esc(g)}</strong><br><span class="muted small">${v.items.map(i => esc(i.note) + " (" + MON3[i.month - 1] + ")").join(", ")}</span></span><span class="r">${v.n} item${v.n > 1 ? "s" : ""}</span><span class="r">${fmt(v.amt)}</span></div>`;
+    if (v.n >= 2) ooRows += `<div class="row"><span class="muted small">Came back ${v.n} times. Save up about ${fmt0(v.amt / 12)} a month for this?</span><span></span><span class="r"><button class="btn inline" data-saveup="${esc(g)}">Save up</button></span></div>`;
   });
-  html += `</div></section>`;
+  html += fold("oneoffs", "Big one-offs this year", `<strong class="num">${fmt(oo.total)}</strong>`,
+    `<p class="explain">Single expenses of ${fmt0(PLAN.oneOffAt)} or more. They don't come every month, but they add up.</p><div class="rows">${ooRows}</div>`);
 
   // Things you buy often
-  const rb = repeatBuys();
-  html += `<section class="card" aria-label="Things you buy often"><h2>Things you buy often</h2><div class="rows">
-    <div class="row head"><span></span><span class="r">This month</span><span class="r">Usual by now</span></div>
+  const rb = repeatBuys(), ups = rb.filter(x => x.trend === "up").length;
+  html += fold("often", "Things you buy often", ups ? `<span class="tag plain">${ups} up</span>` : `<span class="tag good">steady</span>`,
+    `<div class="rows"><div class="row head"><span></span><span class="r">This month</span><span class="r">Usual by now</span></div>
     ${rb.map(x => `<div class="row"><span><strong>${x.name}</strong> ${x.trend === "down" ? '<span class="tag good">▼ nice</span>' : x.trend === "up" ? '<span class="tag plain">▲ more</span>' : ""}</span><span class="r">${x.n} · ${fmt0(x.amt)}</span><span class="r muted">${Math.round(x.un)} · ${fmt0(x.ua)}</span></div>`).join("")}
-    </div><p class="muted small">From the notes you type. You decide what's worth cutting.</p></section>`;
-
-  // Bills you save up for
-  const potTotal = sum(Object.values(state.pots));
-  html += `<section class="card" aria-label="Bills you save up for"><h2>Bills you save up for</h2><div class="rows">
-    ${PLAN.saveups.map(s => { const pot = state.pots[s.name]; const paid = s.due < S.month || (s.due === S.month && state.checklist.due);
-      const monthsTo = ((s.due - S.month + 12) % 12) || (paid ? 12 : 0);
-      const willHave = pot + s.amt * monthsTo; const ok = paid || willHave >= s.yearly;
-      return `<div class="row"><span><strong>${s.name}</strong><br><span class="muted small">${fmt0(s.yearly)} a year · ${paid ? "paid in " + MON3[s.due - 1] + ", refilling" : "due " + MON3[s.due - 1]}</span></span><span class="r">${fmt0(pot)} saved</span><span class="r"><span class="tag ${ok ? "good" : "plain"}">${paid ? "paid" : pot >= s.yearly ? "ready" : ok ? "on track" : "short"}</span></span></div>`; }).join("")}
-    </div><div class="line"><span>Pots total</span><strong class="num">${fmt(potTotal)}</strong></div>
-    <p class="muted">Does your bills account show ${fmt(potTotal)}?</p><div class="btn-row"><button class="btn inline" id="pots-yes">Yes</button><button class="btn secondary inline" id="pots-no">No</button></div></section>`;
-
-  // Put aside and Kept
-  const c2 = c;
-  html += `<section class="card" aria-label="Put aside"><div class="card-head"><h2>Put aside</h2><strong class="num">${fmt(c2.putAsideYear)} this year</strong></div>
-    <div class="line"><span>Monthly savings plan</span><span>${fmt(PLAN.savings[0].amt * S.month)}</span></div>
-    <div class="line"><span>Moved to savings</span><span>${fmt(c2.putAsideYear - PLAN.savings[0].amt * S.month)}</span></div>
-    <div class="line" style="border-top:1px solid var(--rule);padding-top:8px"><span>Kept this month</span><span class="${c2.kept < 0 ? "neg" : ""}">${fmt(c2.kept)}</span></div>
-    <p class="muted small">${c2.kept >= c2.savings + c2.moved
-      ? `Kept is what didn't go on bills or spending. ${fmt(c2.savings + c2.moved)} of it is put aside; the rest is still in your everyday account.`
-      : `You put aside ${fmt(c2.savings + c2.moved)}, and spent ${fmt(c2.savings + c2.moved - c2.kept)} more than came in, so your everyday account went down.`}</p></section>`;
+    </div><p class="muted small">From the notes you type. You decide what's worth cutting.</p>`);
 
   app.innerHTML = html;
   bindCommon();
   const q = id => document.getElementById(id);
   q("info").onclick = () => { openWorkings = !openWorkings; render(); };
+  q("howto").onclick = howtoSheet;
+  document.querySelectorAll("details[data-fold]").forEach(d => d.ontoggle = () => { d.open ? openFolds.add(d.dataset.fold) : openFolds.delete(d.dataset.fold); });
   document.querySelectorAll("[data-check]").forEach(el => {
-    const toggle = () => { const k = el.dataset.check; state.checklist[k] = !state.checklist[k]; render(); if (state.checklist[k]) toast(k === "bills" ? `Ticked. ${fmt(calc().saveup)} is in your bills account.` : k === "savings" ? `Ticked. Put aside this year: ${fmt(calc().putAsideYear)}.` : "Ticked."); };
+    const toggle = () => { const k = el.dataset.check; state.checklist[k] = !state.checklist[k]; render(); if (state.checklist[k]) toast(k === "bills" ? `Ticked. ${fmt(calc().saveup)} is in your yearly bills account.` : k === "savings" ? `Ticked. Saved this year: ${fmt(calc().putAsideYear)}.` : "Ticked."); };
     el.onclick = toggle; el.onkeydown = e => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggle(); } };
   });
   if (q("save-all")) {
     q("save-all").onclick = () => saveAmount(calc().left);
     q("save-some").onclick = () => sheetSaveSome();
-    q("save-not").onclick = () => { promptDone = true; render(); toast("OK. Whatever's left stays in your everyday account."); };
+    q("save-not").onclick = () => { promptDone = true; render(); toast("OK. The money stays in your everyday account."); };
   }
-  document.querySelectorAll("[data-saveup]").forEach(b => b.onclick = () => toast(`Prototype: this would add "${b.dataset.saveup}" to Bills you save up for.`));
-  q("pots-yes").onclick = () => toast("Good. Your pots match your bills account.");
-  q("pots-no").onclick = () => toast("Prototype: this would let you type the real balance and fix the pots.");
+  document.querySelectorAll("[data-saveup]").forEach(b => b.onclick = () => toast(`Prototype: this would add "${b.dataset.saveup}" to your yearly bills.`));
+  if (q("pots-yes")) q("pots-yes").onclick = () => toast("Good. Your yearly bills account matches.");
+  if (q("pots-no")) q("pots-no").onclick = () => toast("Prototype: this would let you type the real balance and fix it.");
+}
+function howtoSheet() {
+  openSheet(`<h2>How this screen works</h2>
+    <p><strong>Left to spend this month</strong>: your pay, minus bills, savings and what you've spent. Above $0 means you're fine.</p>
+    <p><strong>About $X a day</strong>: what you can spend each day and stay inside your limits.</p>
+    <p><strong>Not planned yet</strong>: money no spending limit has claimed. Keep it as a buffer, or save it at month end.</p>
+    <p><strong>Saved this year</strong>: money you've moved to your savings account. It only goes up when you save.</p>
+    <p><strong>Still to do</strong>: money moves to make this month. Tick them when done.</p>
+    <p class="muted">Tap any card with a › to open it.</p>
+    <button class="btn" id="howto-close">Got it</button>`);
+  document.getElementById("howto-close").onclick = closeSheet;
 }
 function saveAmount(a) {
   a = Math.round(a * 100) / 100; if (!(a > 0)) return;
   state.entries.push({ id: "s" + Date.now(), day: S.day, cat: null, amt: a, note: "Moved to savings", kind: "saved" });
-  promptDone = true; render(); toast(`Saved ${fmt(a)}. Put aside this year: ${fmt(calc().putAsideYear)} ▲`);
-  document.querySelector('[aria-label="Put aside"]')?.classList.add("glow");
+  promptDone = true; render(); toast(`Saved ${fmt(a)}. Saved this year: ${fmt(calc().putAsideYear)} ▲`);
+  document.querySelector('[aria-label="Left to spend this month"]')?.classList.add("glow");
 }
 
 function renderLog() {
@@ -464,7 +513,7 @@ function renderLog() {
     const a = parseFloat((document.getElementById("amt").value || "").replace(/[^0-9.]/g, ""));
     if (!(a > 0)) { toast("Type an amount first."); document.getElementById("amt").focus(); return; }
     const note = document.getElementById("note").value.trim(), day = +document.getElementById("day").value;
-    if (kind === "saved") { state.entries.push({ id: "s" + Date.now(), day, cat: null, amt: a, note: note || "Moved to savings", kind: "saved" }); renderLog(); toast(`${fmt(a)} moved to savings. Put aside this year: ${fmt(calc().putAsideYear)}.`); return; }
+    if (kind === "saved") { state.entries.push({ id: "s" + Date.now(), day, cat: null, amt: a, note: note || "Moved to savings", kind: "saved" }); renderLog(); toast(`${fmt(a)} moved to savings. Saved this year: ${fmt(calc().putAsideYear)}.`); return; }
     const e = { id: "e" + Date.now(), day, cat, amt: Math.round(a * 100) / 100, note: note || cat, kind: "expense", oneOff: a >= PLAN.oneOffAt };
     state.entries.push(e); if (e.oneOff) GROUPS[e.note] = GROUPS[e.note] || "Other";
     renderLog();
@@ -475,10 +524,10 @@ function renderLog() {
 }
 function sheetOneOff(e, msg) {
   const monthly = Math.ceil(e.amt / 12);
-  openSheet(`<h2>Is this a one-off?</h2><p>${esc(e.note)}, ${fmt(e.amt)}, is a big amount for one entry.</p>
-    <p class="muted">Things like this tend to come back (repairs, flights, gifts). Setting aside about <strong>${fmt0(monthly)} a month</strong> means next time it's already paid for.</p>
-    <div class="btn-row"><button class="btn" id="oo-save">Yes, save up for this</button><button class="btn secondary" id="oo-once">Just a one-off</button><button class="btn link" id="oo-not">Not a one-off</button></div>`);
-  document.getElementById("oo-save").onclick = () => { closeSheet(); toast(`${msg} Prototype: this would add a ${fmt0(monthly)}-a-month save-up line.`); };
+  openSheet(`<h2>${fmt(e.amt)} is a big one. Save for next time?</h2><p>${esc(e.note)}: costs like this tend to come back (repairs, flights, gifts).</p>
+    <p>Set aside <strong>${fmt0(monthly)} a month</strong> and next time it's already paid for.</p>
+    <div class="btn-row" style="flex-direction:column;align-items:stretch"><button class="btn" id="oo-save">Save ${fmt0(monthly)} a month for next time</button><button class="btn secondary" id="oo-once">No, it's just this once</button><button class="btn link" id="oo-not">This isn't a one-off (it's normal spending)</button></div>`);
+  document.getElementById("oo-save").onclick = () => { closeSheet(); toast(`${msg} Prototype: this would add ${fmt0(monthly)} a month to your yearly bills.`); };
   document.getElementById("oo-once").onclick = () => { closeSheet(); toast(msg + " Added to Big one-offs this year."); };
   document.getElementById("oo-not").onclick = () => { e.oneOff = false; closeSheet(); toast(msg); };
 }
@@ -497,11 +546,11 @@ function renderBudget() {
   app.innerHTML = header() + `<div class="monthbar"><h1>Budget</h1><span class="muted">Every month</span></div>` +
     block("Money in", PLAN.income.map(x => [x.name, x.amt])) +
     block("Monthly bills", PLAN.bills.map(x => [x.name, x.amt])) +
-    block("Savings", PLAN.savings.map(x => [x.name, x.amt, "Comes off the top. Counts as Put aside."])) +
-    block("Bills you save up for", PLAN.saveups.map(x => [x.name, x.amt, `${fmt0(x.yearly)} a year, due ${MONTHS[x.due - 1]}`])) +
+    block("Savings", PLAN.savings.map(x => [x.name, x.amt, "Comes off the top. Counts towards Saved this year."])) +
+    block("Yearly bills (set aside each month)", PLAN.saveups.map(x => [x.name, x.amt, `${fmt0(x.yearly)} a year, due ${MONTHS[x.due - 1]}`])) +
     block("Spending limits", Object.entries(PLAN.limits).map(([k, v]) => [k, v, k === "Food" ? "Also: nice meals over $40, 2 a week" : ""])) +
-    `<section class="card lead"><div class="line"><strong>Spare (not in any limit)</strong><strong class="num">${fmt(spareStart)}</strong></div>
-     <p class="muted">A buffer for the month. Near month end the app offers to save whatever you didn't spend.</p></section>`;
+    `<section class="card lead"><div class="line"><strong>Not planned yet</strong><strong class="num">${fmt(spareStart)}</strong></div>
+     <p class="muted">Money no spending limit has claimed: a buffer for the month. Near month end the app offers to save whatever you didn't spend.</p></section>`;
   bindCommon();
 }
 function renderHistory() {
